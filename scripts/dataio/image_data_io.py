@@ -238,10 +238,10 @@ class ImageDataIO:
             local_rotation=camera_characteristics.rot_quat
         )
 
-        fxs = np.full_like(timestamps, camera_characteristics.fx)
-        fys = np.full_like(timestamps, camera_characteristics.fy)
-        cxs = np.full_like(timestamps, camera_characteristics.cx)
-        cys = np.full_like(timestamps, camera_characteristics.cy)
+        fxs = np.full_like(timestamps, camera_characteristics.fx, dtype=np.float32)
+        fys = np.full_like(timestamps, camera_characteristics.fy, dtype=np.float32)
+        cxs = np.full_like(timestamps, camera_characteristics.cx, dtype=np.float32)
+        cys = np.full_like(timestamps, camera_characteristics.cy, dtype=np.float32)
         widths = np.full_like(timestamps, camera_characteristics.width)
         heights = np.full_like(timestamps, camera_characteristics.height)
 
