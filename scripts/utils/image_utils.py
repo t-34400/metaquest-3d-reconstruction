@@ -1,4 +1,5 @@
 import cv2
+cv2.setNumThreads(0)
 import numpy as np
 from models.image_format_info import ImageFormatInfo
 
