@@ -2,7 +2,6 @@ from pathlib import Path
 from mq3drecon.config.pipeline_configs import PipelineConfigs
 from mq3drecon.dataio.data_io import DataIO
 from mq3drecon.processing.depth_conversion.convert_depth_to_linear import convert_depth_directory
-from mq3drecon.processing.reconstruction.reconstruct_scene import reconstruct_scene
 from mq3drecon.processing.yuv_conversion.convert_yuv_dir import convert_yuv_directory
 
 
@@ -21,4 +20,6 @@ class PipelineProcessor:
 
 
     def reconstruct_scene(self):
+        from mq3drecon.processing.reconstruction.reconstruct_scene import reconstruct_scene
+
         reconstruct_scene(data_io=self.data_io, config=self.pipeline_configs.reconstruction)
