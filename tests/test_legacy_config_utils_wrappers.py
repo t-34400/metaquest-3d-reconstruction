@@ -32,6 +32,8 @@ assert read_and_write_model is not None
 assert 'open3d' not in sys.modules
 """
     env = os.environ.copy()
+    env.setdefault("OPENBLAS_NUM_THREADS", "1")
+    env.setdefault("OMP_NUM_THREADS", "1")
     env["PYTHONPATH"] = os.pathsep.join([str(repo_root / "scripts"), str(repo_root / "src")])
     result = subprocess.run(
         [sys.executable, "-c", code],
@@ -40,6 +42,7 @@ assert 'open3d' not in sys.modules
         check=False,
         capture_output=True,
         text=True,
+        timeout=30,
     )
 
     assert result.returncode == 0, result.stderr

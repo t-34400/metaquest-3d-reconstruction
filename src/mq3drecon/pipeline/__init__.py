@@ -1,11 +1,5 @@
 """Pipeline orchestration APIs exposed by MQ3DRecon."""
 
+from mq3drecon.pipeline.pipeline_processor import PipelineProcessor
+
 __all__ = ["PipelineProcessor"]
-
-
-def __getattr__(name: str):
-    if name == "PipelineProcessor":
-        from mq3drecon.pipeline.pipeline_processor import PipelineProcessor
-
-        return PipelineProcessor
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

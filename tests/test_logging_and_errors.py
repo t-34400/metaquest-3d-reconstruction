@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 import pytest
@@ -36,11 +37,17 @@ def test_conversion_legacy_scripts_convert_expected_failures_to_exit_status_one(
     config = tmp_path / "empty.yml"
     config.write_text("{}\n")
 
+    env = os.environ.copy()
+    env.setdefault("OPENBLAS_NUM_THREADS", "1")
+    env.setdefault("OMP_NUM_THREADS", "1")
+
     result = subprocess.run(
         [sys.executable, script, "--project_dir", str(tmp_path), "--config", str(config)],
         check=False,
         capture_output=True,
         text=True,
+        timeout=30,
+        env=env,
     )
 
     assert result.returncode == 1
