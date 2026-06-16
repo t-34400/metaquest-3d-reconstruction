@@ -16,9 +16,33 @@ This project provides a complete pipeline for generating 3D reconstructions usin
 
 ## 🚀 Setup
 
+### Lightweight pip install
+
+The default pip installation is the lightweight profile. It supports configuration, layouts, models, data I/O imports, conversion workflows, and COLMAP export imports without installing Open3D.
+
+```bash
+pip install mq3drecon
+```
+
+### Full pip install
+
+Install the full optional profile when you need Open3D-backed reconstruction and visualization dependencies.
+
+```bash
+pip install 'mq3drecon[full]'
+```
+
+Feature-specific profiles are also available for narrower environments:
+
+```bash
+pip install 'mq3drecon[convert]'
+pip install 'mq3drecon[io]'
+pip install 'mq3drecon[reconstruction]'
+```
+
 ### Environment Setup (with conda)
 
-We recommend using [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/) to manage environments.
+We recommend using [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/) to manage development environments. The conda environment may include the full dependency set for contributor convenience.
 
 Create and activate the environment:
 
