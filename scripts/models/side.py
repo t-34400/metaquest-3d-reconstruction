@@ -1,6 +1,3 @@
-from enum import Enum
+"""Legacy compatibility wrapper for mq3drecon.models.side."""
 
-
-class Side(Enum):
-    LEFT = "left"
-    RIGHT = "right"
+from mq3drecon.models.side import *
