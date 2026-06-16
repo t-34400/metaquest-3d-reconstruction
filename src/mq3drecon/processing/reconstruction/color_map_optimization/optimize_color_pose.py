@@ -1,6 +1,6 @@
 import open3d as o3d
 
-from mq3drecon.config.reconstruction_config import ColorOptimizationConfig
+from mq3drecon.config.reconstruction_config import ColorOptimizationConfig, to_open3d_device
 from mq3drecon.dataio.data_io import DataIO
 from mq3drecon.models.camera_dataset import CameraDataset
 from mq3drecon.models.side import Side
@@ -18,7 +18,7 @@ def optimize_color_pose(
         estimated_vertex_number=config.estimated_vertex_number
     )
 
-    scene = o3d.t.geometry.RaycastingScene(device=config.device)
+    scene = o3d.t.geometry.RaycastingScene(device=to_open3d_device(config.device))
     scene.add_triangles(mesh.cpu())
     
     rgbd_images = []

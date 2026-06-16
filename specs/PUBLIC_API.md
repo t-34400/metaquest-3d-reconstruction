@@ -127,7 +127,7 @@ Public modules that only define lightweight data structures, schemas, path layou
 
 Open3D-dependent imports must be isolated to reconstruction-specific modules or lazily resolved where practical.
 
-Device selection must be explicit or safely portable. CPU-compatible defaults are preferred for package APIs and tests.
+Device selection must be explicit or safely portable. CPU-compatible defaults are required for package configuration objects and tests unless a caller explicitly requests another device.
 
 ---
 
@@ -170,7 +170,7 @@ Lightweight configuration exports:
 * `Yuv2RgbConfig`
 * `ProjectPathConfig`
 
-Reconstruction and pipeline configuration exports are public but may import reconstruction-specific optional dependencies when accessed:
+Reconstruction and pipeline configuration exports are public and must remain importable without reconstruction-specific optional dependencies such as Open3D:
 
 * `PipelineConfigs`
 * `ReconstructionConfig`

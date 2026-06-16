@@ -1,6 +1,16 @@
-import open3d as o3d
 from dataclasses import dataclass, field, fields, is_dataclass
-from typing import Any, get_origin, get_args
+from typing import Any, get_args, get_origin
+
+DeviceSpec = Any
+DEFAULT_DEVICE = "CPU:0"
+
+
+def to_open3d_device(device: DeviceSpec):
+    import open3d as o3d
+
+    if isinstance(device, str):
+        return o3d.core.Device(device)
+    return device
 
 
 @dataclass
@@ -15,7 +25,7 @@ class DepthConfidenceEstimationConfig:
 
 @dataclass
 class FragmentGenerationConfig:
-    device: o3d.core.Device
+    device: DeviceSpec
     fragment_size: int = 100
     use_confidence_filtered_depth: bool = True
     confidence_threshold: float = 0.05
@@ -32,7 +42,7 @@ class FragmentGenerationConfig:
 
 @dataclass
 class FragmentPoseRefinementConfig:
-    device: o3d.core.Device
+    device: DeviceSpec
     use_confidence_filtered_depth: bool = True
     confidence_threshold: float = 0.05
     valid_count_threshold: int = 4
@@ -57,14 +67,15 @@ class FragmentPoseRefinementConfig:
     edge_prune_threshold: float = 0.25
     use_multi_threading: bool = False
 
-
     @property
     def icp_criteria_list(self):
+        import open3d as o3d
+
         return [
             o3d.t.pipelines.registration.ICPConvergenceCriteria(
                 max_iteration=self.max_iterations[i],
                 relative_fitness=self.relative_fitnesses[i],
-                relative_rmse=self.relative_rmses[i]
+                relative_rmse=self.relative_rmses[i],
             )
             for i in range(len(self.icp_voxel_sizes))
         ]
@@ -72,7 +83,7 @@ class FragmentPoseRefinementConfig:
 
 @dataclass
 class IntegrationConfig:
-    device: o3d.core.Device
+    device: DeviceSpec
     use_confidence_filtered_depth: bool = True
     confidence_threshold: float = 0.05
     valid_count_threshold: int = 4
@@ -85,7 +96,7 @@ class IntegrationConfig:
 
 @dataclass
 class ColorOptimizationConfig:
-    device: o3d.core.Device
+    device: DeviceSpec
     weight_threshold: float = 3.0
     estimated_vertex_number: int = -1
     interval: int = 10
@@ -97,13 +108,12 @@ class ColorOptimizationConfig:
 class ColorAlignedDepthRenderingConfig:
     weight_threshold: float = 3.0
     estimated_vertex_number: int = -1
-
     only_use_optimized_dataset: bool = True
 
 
 @dataclass
 class ReconstructionConfig:
-    device: o3d.core.Device = o3d.core.Device("CUDA:0")
+    device: DeviceSpec = DEFAULT_DEVICE
 
     # Step 0: Dataset generation
     use_dataset_cache: bool = True
@@ -138,7 +148,6 @@ class ReconstructionConfig:
     color_optimization: ColorOptimizationConfig = field(init=False)
     color_aligned_depth_rendering: ColorAlignedDepthRenderingConfig = field(init=False)
 
-
     def __post_init__(self):
         self.confidence_estimation = DepthConfidenceEstimationConfig()
         self.fragment_generation = FragmentGenerationConfig(device=self.device)
@@ -148,14 +157,19 @@ class ReconstructionConfig:
         self.color_aligned_depth_rendering = ColorAlignedDepthRenderingConfig()
 
         if self.use_dataset_cache:
-            for attr_name in vars(self):
-                subconfig = getattr(self, attr_name)
-                if hasattr(subconfig, 'use_dataset_cache'):
-                    setattr(subconfig, 'use_dataset_cache', True)
+            self._enable_dataset_cache_on_subconfigs()
 
+    def open3d_device(self):
+        return to_open3d_device(self.device)
+
+    def _enable_dataset_cache_on_subconfigs(self):
+        for attr_name in vars(self):
+            subconfig = getattr(self, attr_name)
+            if hasattr(subconfig, "use_dataset_cache"):
+                setattr(subconfig, "use_dataset_cache", True)
 
     @classmethod
-    def parse(cls, config_dict: dict[str, Any]) -> 'ReconstructionConfig':
+    def parse(cls, config_dict: dict[str, Any]) -> "ReconstructionConfig":
         def init_dataclass(dc_cls, d: dict, parent_device=None):
             kwargs = {}
             post_inits = {}
@@ -167,19 +181,16 @@ class ReconstructionConfig:
                 value = d[f.name]
                 hint = f.type
 
-                if hint is o3d.core.Device and isinstance(value, str):
-                    value = o3d.core.Device(value)
-
+                if _is_device_field(f.name, hint):
+                    value = str(value) if isinstance(value, str) else value
                 elif is_dataclass(hint) and isinstance(value, dict):
                     value = init_dataclass(hint, value, parent_device=parent_device)
-
                 elif hint is float and isinstance(value, str):
                     value = float(value)
                 elif hint is int and isinstance(value, str):
                     value = int(value)
                 elif hint is bool and isinstance(value, str):
-                    value = value.lower() in ('true', '1')
-
+                    value = value.lower() in ("true", "1")
                 elif get_origin(hint) is list:
                     subtype = get_args(hint)[0]
                     if isinstance(value, list):
@@ -190,17 +201,17 @@ class ReconstructionConfig:
                         elif subtype is str:
                             value = [str(v) for v in value]
                         elif subtype is bool:
-                            value = [v.lower() in ('true', '1') if isinstance(v, str) else bool(v) for v in value]
+                            value = [v.lower() in ("true", "1") if isinstance(v, str) else bool(v) for v in value]
 
                 if f.init:
                     kwargs[f.name] = value
                 else:
                     post_inits[f.name] = value
 
-            needs_device = any(f.name == 'device' for f in fields(dc_cls))
-            if needs_device and 'device' not in kwargs:
+            needs_device = any(_is_device_field(f.name, f.type) for f in fields(dc_cls))
+            if needs_device and "device" not in kwargs:
                 if parent_device is not None:
-                    kwargs['device'] = parent_device
+                    kwargs["device"] = parent_device
                 else:
                     raise ValueError(f"{dc_cls.__name__} requires 'device', but none was provided.")
 
@@ -210,16 +221,18 @@ class ReconstructionConfig:
                 setattr(instance, k, v)
 
             return instance
-        
-        raw_device = config_dict.get("device", "CPU:0")
-        device = o3d.core.Device(raw_device if isinstance(raw_device, str) else raw_device)
 
+        device = config_dict.get("device", DEFAULT_DEVICE)
         config = init_dataclass(cls, config_dict, parent_device=device)
 
         if config.use_dataset_cache:
             for attr_name in vars(config):
                 attr = getattr(config, attr_name)
-                if hasattr(attr, 'use_dataset_cache') and attr.use_dataset_cache is not False:
-                    setattr(attr, 'use_dataset_cache', True)
+                if hasattr(attr, "use_dataset_cache") and attr.use_dataset_cache is not False:
+                    setattr(attr, "use_dataset_cache", True)
 
         return config
+
+
+def _is_device_field(name: str, hint: Any) -> bool:
+    return name == "device" and (hint is DeviceSpec or hint is Any or hint == "DeviceSpec")

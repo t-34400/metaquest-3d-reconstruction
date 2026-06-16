@@ -2,7 +2,7 @@ import itertools
 from typing import Optional, cast
 import numpy as np
 import open3d as o3d
-from config.reconstruction_config import FragmentPoseRefinementConfig
+from config.reconstruction_config import FragmentPoseRefinementConfig, to_open3d_device
 from dataio.depth_data_io import DepthDataIO
 from dataio.reconstruction_data_io import ReconstructionDataIO
 from models.camera_dataset import DepthDataset
@@ -29,7 +29,7 @@ def integrate_fragment_point_cloud(
         block_count=config.block_count,
         depth_max=config.depth_max,
         trunc_voxel_multiplier=config.trunc_voxel_multiplier,
-        device=config.device,
+        device=to_open3d_device(config.device),
         show_progress=False,
         desc=None,
         vbg_opt=None,

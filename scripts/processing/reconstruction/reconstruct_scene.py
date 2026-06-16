@@ -2,7 +2,7 @@ from typing import Optional
 import open3d as o3d
 from tqdm import tqdm
 
-from config.reconstruction_config import ReconstructionConfig
+from config.reconstruction_config import ReconstructionConfig, to_open3d_device
 from dataio.data_io import DataIO
 from models.camera_dataset import CameraDataset, DepthDataset
 from models.side import Side
@@ -72,7 +72,7 @@ def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
                 block_count=integration_config.block_count,
                 depth_max=integration_config.depth_max,
                 trunc_voxel_multiplier=integration_config.trunc_voxel_multiplier,
-                device=integration_config.device,
+                device=to_open3d_device(integration_config.device),
                 show_progress=True,
                 desc=f"[{side.name}] Integrating depth maps ...",
                 vbg_opt=vbg
@@ -127,7 +127,7 @@ def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
             estimated_vertex_number=config.color_aligned_depth_rendering.estimated_vertex_number
         )
 
-        scene = o3d.t.geometry.RaycastingScene(device=config.device)
+        scene = o3d.t.geometry.RaycastingScene(device=to_open3d_device(config.device))
         scene.add_triangles(mesh.cpu())
 
         def render_color_aligned_depth_map(dataset: CameraDataset, desc: str = ''):

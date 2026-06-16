@@ -2,7 +2,7 @@ from typing import Generator, Optional
 import numpy as np
 import open3d as o3d
 
-from config.reconstruction_config import FragmentGenerationConfig
+from config.reconstruction_config import FragmentGenerationConfig, to_open3d_device
 from dataio.depth_data_io import DepthDataIO
 from models.camera_dataset import DepthDataset
 from models.side import Side
@@ -108,7 +108,7 @@ def build_pose_graph_for_fragment(
         side=side,
         index=0,
         dataset=frag_dataset,
-        device=config.device,
+        device=to_open3d_device(config.device),
         use_confidence_filtered_depth=config.use_confidence_filtered_depth,
         confidence_threshold=config.confidence_threshold,
         valid_count_threshold=config.valid_count_threshold,
@@ -121,7 +121,7 @@ def build_pose_graph_for_fragment(
             side=side,
             index=i + 1,
             dataset=frag_dataset,
-            device=config.device,
+            device=to_open3d_device(config.device),
             use_confidence_filtered_depth=config.use_confidence_filtered_depth,
             confidence_threshold=config.confidence_threshold,
             valid_count_threshold=config.valid_count_threshold,
@@ -176,7 +176,7 @@ def build_pose_graph_for_fragment(
             side=side, 
             index=key_i, 
             dataset=frag_dataset, 
-            device=config.device,
+            device=to_open3d_device(config.device),
             use_confidence_filtered_depth=config.use_confidence_filtered_depth,
             confidence_threshold=config.confidence_threshold,
             valid_count_threshold=config.valid_count_threshold,
@@ -193,7 +193,7 @@ def build_pose_graph_for_fragment(
                 side=side, 
                 index=key_j, 
                 dataset=frag_dataset, 
-                device=config.device,
+                device=to_open3d_device(config.device),
                 use_confidence_filtered_depth=config.use_confidence_filtered_depth,
                 confidence_threshold=config.confidence_threshold,
                 valid_count_threshold=config.valid_count_threshold,
