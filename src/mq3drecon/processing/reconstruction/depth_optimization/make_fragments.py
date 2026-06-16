@@ -2,7 +2,8 @@ from typing import Generator, Optional
 import numpy as np
 import open3d as o3d
 
-from mq3drecon.config.reconstruction_config import FragmentGenerationConfig, to_open3d_device
+from mq3drecon.config.reconstruction_config import FragmentGenerationConfig
+from mq3drecon.processing.reconstruction.adapters.open3d_adapter import to_open3d_device
 from mq3drecon.dataio.depth_data_io import DepthDataIO
 from mq3drecon.models.camera_dataset import DepthDataset
 from mq3drecon.models.side import Side

@@ -1,6 +1,7 @@
 import open3d as o3d
 
-from mq3drecon.config.reconstruction_config import ColorOptimizationConfig, to_open3d_device
+from mq3drecon.config.reconstruction_config import ColorOptimizationConfig
+from mq3drecon.processing.reconstruction.adapters.open3d_adapter import to_open3d_device
 from mq3drecon.dataio.data_io import DataIO
 from mq3drecon.models.camera_dataset import CameraDataset
 from mq3drecon.models.side import Side

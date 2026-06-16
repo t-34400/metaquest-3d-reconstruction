@@ -5,14 +5,6 @@ DeviceSpec = Any
 DEFAULT_DEVICE = "CPU:0"
 
 
-def to_open3d_device(device: DeviceSpec):
-    import open3d as o3d
-
-    if isinstance(device, str):
-        return o3d.core.Device(device)
-    return device
-
-
 @dataclass
 class DepthConfidenceEstimationConfig:
     target_frame_range: int = 10
@@ -66,19 +58,6 @@ class FragmentPoseRefinementConfig:
     dist_threshold: float = 0.07
     edge_prune_threshold: float = 0.25
     use_multi_threading: bool = False
-
-    @property
-    def icp_criteria_list(self):
-        import open3d as o3d
-
-        return [
-            o3d.t.pipelines.registration.ICPConvergenceCriteria(
-                max_iteration=self.max_iterations[i],
-                relative_fitness=self.relative_fitnesses[i],
-                relative_rmse=self.relative_rmses[i],
-            )
-            for i in range(len(self.icp_voxel_sizes))
-        ]
 
 
 @dataclass
@@ -158,9 +137,6 @@ class ReconstructionConfig:
 
         if self.use_dataset_cache:
             self._enable_dataset_cache_on_subconfigs()
-
-    def open3d_device(self):
-        return to_open3d_device(self.device)
 
     def _enable_dataset_cache_on_subconfigs(self):
         for attr_name in vars(self):

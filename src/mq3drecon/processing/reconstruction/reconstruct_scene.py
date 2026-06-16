@@ -2,7 +2,8 @@ from typing import Optional
 import open3d as o3d
 from tqdm import tqdm
 
-from mq3drecon.config.reconstruction_config import ReconstructionConfig, to_open3d_device
+from mq3drecon.config.reconstruction_config import ReconstructionConfig
+from mq3drecon.processing.reconstruction.adapters.open3d_adapter import to_open3d_device
 from mq3drecon.dataio.data_io import DataIO
 from mq3drecon.models.camera_dataset import CameraDataset, DepthDataset
 from mq3drecon.models.side import Side

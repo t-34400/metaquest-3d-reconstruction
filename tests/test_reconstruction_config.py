@@ -29,3 +29,11 @@ def test_pipeline_config_import_does_not_require_open3d():
 
     assert PipelineConfigs is not None
     assert "open3d" not in sys.modules
+
+
+def test_reconstruction_config_has_no_open3d_adapter_api():
+    import mq3drecon.config.reconstruction_config as reconstruction_config
+
+    assert not hasattr(ReconstructionConfig(), "open3d_device")
+    assert not hasattr(ReconstructionConfig().fragment_pose_refinement, "icp_criteria_list")
+    assert not hasattr(reconstruction_config, "to_open3d_device")

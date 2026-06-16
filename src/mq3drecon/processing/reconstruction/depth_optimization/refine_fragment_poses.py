@@ -2,7 +2,8 @@ import itertools
 from typing import Optional, cast
 import numpy as np
 import open3d as o3d
-from mq3drecon.config.reconstruction_config import FragmentPoseRefinementConfig, to_open3d_device
+from mq3drecon.config.reconstruction_config import FragmentPoseRefinementConfig
+from mq3drecon.processing.reconstruction.adapters.open3d_adapter import make_icp_criteria_list, to_open3d_device
 from mq3drecon.dataio.depth_data_io import DepthDataIO
 from mq3drecon.dataio.reconstruction_data_io import ReconstructionDataIO
 from mq3drecon.models.camera_dataset import DepthDataset
@@ -115,7 +116,7 @@ def compute_pcd_pair_edge(
         source=source_pcd,
         target=target_pcd,
         voxel_sizes=o3d.utility.DoubleVector(config.icp_voxel_sizes),
-        criteria_list=config.icp_criteria_list,
+        criteria_list=make_icp_criteria_list(config),
         max_correspondence_distances=o3d.utility.DoubleVector(config.max_corr_dists),
         init_source_to_target=np.eye(4),
         estimation_method=o3d.t.pipelines.registration.TransformationEstimationPointToPoint(),
