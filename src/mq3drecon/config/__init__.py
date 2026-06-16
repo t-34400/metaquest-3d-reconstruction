@@ -1,7 +1,8 @@
 """Configuration APIs exposed by MQ3DRecon."""
 
 from mq3drecon.config.depth_to_linear_config import Depth2LinearConfig
-from mq3drecon.config.project_path_config import LegacyProjectLayout, ProjectPathConfig
+from mq3drecon.config.project_path_config import ProjectPathConfig
+from mq3drecon.layouts import LegacyProjectLayout
 from mq3drecon.config.yuv_to_rgb_config import Yuv2RgbConfig
 
 __all__ = [

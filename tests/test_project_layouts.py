@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from mq3drecon.config import LegacyProjectLayout, ProjectPathConfig
-from mq3drecon.layouts import ColmapExportLayout, PackageOutputLayout
+from mq3drecon.config import ProjectPathConfig
+from mq3drecon.layouts import ColmapExportLayout, LegacyProjectLayout, PackageOutputLayout
 from mq3drecon.models import Side
 
 
