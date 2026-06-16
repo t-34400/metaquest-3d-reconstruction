@@ -7,6 +7,7 @@ def test_conversion_legacy_scripts_expose_help_without_pipeline_imports():
         "scripts/convert_yuv_to_rgb.py",
         "scripts/convert_depth_to_linear_map.py",
         "scripts/build_colmap_project.py",
+        "scripts/reconstruct_scene.py",
     ]
 
     for script in scripts:

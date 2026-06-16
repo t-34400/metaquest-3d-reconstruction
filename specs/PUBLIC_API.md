@@ -206,6 +206,7 @@ Package-backed workflow APIs for legacy-compatible commands:
 * `run_yuv_to_rgb`
 * `run_depth_to_linear`
 * `export_colmap_project`
+* `run_reconstruct_scene`
 
 ## `mq3drecon.pipeline`
 
