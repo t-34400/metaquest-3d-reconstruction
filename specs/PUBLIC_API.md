@@ -201,12 +201,12 @@ Data I/O facade exports are public migration APIs:
 
 ## `mq3drecon.workflows`
 
-Package-backed workflow APIs for legacy-compatible conversion commands:
+Package-backed workflow APIs for legacy-compatible commands:
 
 * `run_yuv_to_rgb`
 * `run_depth_to_linear`
+* `export_colmap_project`
 
 ## `mq3drecon.pipeline`
 
 * `PipelineProcessor`
-

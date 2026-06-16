@@ -9,7 +9,7 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
     from mq3drecon.models import CameraDataset, CoordinateSystem, DepthDataset, Side, Transforms
     from mq3drecon.processing.depth_conversion import convert_depth_directory
     from mq3drecon.processing.yuv_conversion import convert_yuv_directory
-    from mq3drecon.workflows import run_depth_to_linear, run_yuv_to_rgb
+    from mq3drecon.workflows import export_colmap_project, run_depth_to_linear, run_yuv_to_rgb
 
     assert Depth2LinearConfig is not None
     assert ProjectPathConfig is not None
@@ -25,5 +25,6 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
     assert Transforms is not None
     assert convert_depth_directory is not None
     assert convert_yuv_directory is not None
+    assert export_colmap_project is not None
     assert run_depth_to_linear is not None
     assert run_yuv_to_rgb is not None
