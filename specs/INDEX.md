@@ -79,6 +79,20 @@ Read when changing:
 Related tests: none currently identified.
 
 
+
+## `PACKAGING.md`
+
+Navigation for pip installation profiles and optional dependency boundaries.
+
+Read when changing:
+
+* package dependency metadata
+* optional extras such as lightweight, conversion, reconstruction, or full installs
+* Open3D dependency placement
+* default pip installation behavior
+
+Related tests: `tests/test_packaging_metadata.py`, `tests/test_public_api_imports.py`.
+
 ## `CLI_BEHAVIOR.md`
 
 Navigation for command-line interface behavior and migration shims.
