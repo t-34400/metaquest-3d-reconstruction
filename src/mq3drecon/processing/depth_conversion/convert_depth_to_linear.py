@@ -1,14 +1,18 @@
+import logging
+
 from tqdm import tqdm
 import numpy as np
 from mq3drecon.config.depth_to_linear_config import Depth2LinearConfig
 from mq3drecon.dataio.depth_data_io import DepthDataIO
 from mq3drecon.models.side import Side
 
+logger = logging.getLogger(__name__)
+
 
 def convert_depth_directory(
     depth_data_io: DepthDataIO,
-    depth_to_linear_config: Depth2LinearConfig
-):
+    depth_to_linear_config: Depth2LinearConfig,
+) -> None:
     for side in Side:
         dataset = depth_data_io.load_depth_dataset(side=side, use_cache=depth_to_linear_config.use_cache)
 
@@ -40,7 +44,7 @@ def convert_depth_directory(
             depth_data_io.save_linear_depth_map(
                 depth_map=linear_depth_map,
                 side=side,
-                timestamp=timestamp
+                timestamp=timestamp,
             )
 
-        print(f"[Info] Converted depth images for {side} camera to linear format.")
+        logger.info("Converted depth images for %s camera to linear format", side)

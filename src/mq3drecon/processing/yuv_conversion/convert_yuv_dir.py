@@ -1,4 +1,5 @@
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import logging
 import traceback
 from typing import Callable, Optional
 
@@ -6,8 +7,11 @@ import numpy as np
 from tqdm import tqdm
 from mq3drecon.config.yuv_to_rgb_config import Yuv2RgbConfig
 from mq3drecon.dataio.image_data_io import ImageDataIO
+from mq3drecon.errors import ProcessingError
 from mq3drecon.models.side import Side
 from mq3drecon.utils.image_utils import convert_yuv420_888_to_bgr, is_blur_image, is_over_or_under_exposed
+
+logger = logging.getLogger(__name__)
 
 
 def process_file(
@@ -25,20 +29,18 @@ def process_file(
         if filter is not None:
             if not filter(bgr_img):
                 return False
-            
+
         image_io.save_bgr(bgr=bgr_img, side=side, timestamp=timestamp)
 
         return True
 
     except Exception:
-        raise RuntimeError(f"Failed in {side}/{timestamp}:\n{traceback.format_exc()}")
-    
+        raise ProcessingError(f"Failed in {side}/{timestamp}:\n{traceback.format_exc()}")
 
 
 class FilterFn:
     def __init__(self, config: Yuv2RgbConfig):
         self.config = config
-
 
     def __call__(self, bgr_img: np.ndarray) -> bool:
         if self.config.blur_filter and is_blur_image(bgr_img, blur_threshold=self.config.blur_threshold):
@@ -52,18 +54,15 @@ class FilterFn:
         return True
 
 
-def convert_yuv_directory(
-    image_io: ImageDataIO,
-    config: Yuv2RgbConfig
-):
+def convert_yuv_directory(image_io: ImageDataIO, config: Yuv2RgbConfig) -> None:
     filter = FilterFn(config=config)
+    failures: list[str] = []
 
     for side in Side:
         yuv_timestamps = image_io.get_yuv_timestamps(side)
 
         excluded_count = 0
         processed_count = 0
-        exception_count = 0
 
         with ProcessPoolExecutor() as executor:
             futures = [
@@ -78,15 +77,14 @@ def convert_yuv_directory(
                     else:
                         excluded_count += 1
 
-                except Exception as e:
-                    print(f"[Exception] Worker failed: {e}")
-                    exception_count += 1
-                    continue            
+                except Exception as exc:
+                    logger.exception("YUV conversion worker failed")
+                    failures.append(str(exc))
 
-        print(f"[Info] {processed_count} images written to {image_io.image_path_config.get_rgb_dir(side)}")
+        logger.info("%s images written to %s", processed_count, image_io.image_path_config.get_rgb_dir(side))
 
         if excluded_count > 0:
-            print(f"[Info] {excluded_count} images were excluded by filtering.")
+            logger.info("%s images were excluded by filtering", excluded_count)
 
-        if exception_count > 0:
-            print(f"[Error] {exception_count} files failed due to exceptions.")
+    if failures:
+        raise ProcessingError(f"{len(failures)} files failed during YUV conversion")

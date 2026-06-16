@@ -6,6 +6,7 @@ from _bootstrap import add_src_to_path
 
 add_src_to_path()
 
+from mq3drecon.errors import MQ3DReconError
 from mq3drecon.workflows import export_colmap_project
 
 
@@ -60,7 +61,7 @@ def main(args) -> int:
             interval=args.interval,
         )
         return 0
-    except (FileNotFoundError, ValueError) as exc:
+    except (MQ3DReconError, FileNotFoundError, ValueError, OSError) as exc:
         print(f"[Error] {exc}", file=sys.stderr)
         return 1
 

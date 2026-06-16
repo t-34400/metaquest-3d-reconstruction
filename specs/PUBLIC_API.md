@@ -218,3 +218,11 @@ Path layout exports are public migration APIs:
 * `LegacyProjectLayout`
 * `PackageOutputLayout`
 * `ColmapExportLayout`
+
+
+## `mq3drecon.errors`
+
+Typed project exceptions are public APIs for callers and CLI shims:
+
+* `MQ3DReconError`
+* `ProcessingError`

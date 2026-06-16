@@ -107,10 +107,24 @@ Read when changing:
 
 Related tests: none currently identified.
 
+
+## `LOGGING_AND_ERRORS.md`
+
+Navigation for library error reporting, typed project exceptions, logging, and CLI error conversion.
+
+Read when changing:
+
+* library exception behavior
+* project-specific exception classes
+* logging behavior in package modules
+* CLI handling of expected failures
+* migration away from print-only error reporting
+
+Related tests: none currently identified.
+
 Expected future specification areas include:
 
 * reconstruction configuration and Open3D dependency boundaries
-* logging, exceptions, and validation behavior
 * visualization and headless execution behavior
 
 When adding more topic-specific specifications, each entry should describe only navigation information:

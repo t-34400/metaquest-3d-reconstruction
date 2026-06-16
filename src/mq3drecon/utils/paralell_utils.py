@@ -1,5 +1,8 @@
+import logging
 import os
 import multiprocessing
+
+logger = logging.getLogger(__name__)
 
 
 class ParallelWorker:
@@ -11,10 +14,9 @@ class ParallelWorker:
         try:
             if isinstance(args, tuple):
                 return self.func(*args)
-            else:
-                return self.func(args)
-        except Exception as e:
-            print(f"[Error] {self.func.__name__} failed: {e}")
+            return self.func(args)
+        except Exception:
+            logger.exception("%s failed", self.func.__name__)
             return self.default
 
 
@@ -39,11 +41,7 @@ def parallel_map(
             args_iter = tqdm(args_list, total=len(args_list), desc=desc)
 
         for args in args_iter:
-            try:
-                results.append(worker(args))
-            except Exception as e:
-                print(f"[Error] {func.__name__} failed: {e}")
-                results.append(default_on_error)
+            results.append(worker(args))
 
         return results
 
