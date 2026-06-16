@@ -37,3 +37,31 @@ def test_reconstruction_config_has_no_open3d_adapter_api():
     assert not hasattr(ReconstructionConfig(), "open3d_device")
     assert not hasattr(ReconstructionConfig().fragment_pose_refinement, "icp_criteria_list")
     assert not hasattr(reconstruction_config, "to_open3d_device")
+
+
+def test_reconstruction_config_compat_module_reexports_split_classes():
+    from mq3drecon.config.reconstruction import ReconstructionConfig as SplitConfig
+    from mq3drecon.config.reconstruction_config import ReconstructionConfig as CompatConfig
+
+    assert CompatConfig is SplitConfig
+
+
+def test_reconstruction_config_focused_modules_import_without_open3d():
+    sys.modules.pop("open3d", None)
+
+    from mq3drecon.config.reconstruction.fragment_pose_refinement import FragmentPoseRefinementConfig
+
+    config = FragmentPoseRefinementConfig(device="CPU:0")
+
+    assert config.device == "CPU:0"
+    assert "open3d" not in sys.modules
+
+
+def test_reconstruction_config_parse_subconfig_inherits_parent_device():
+    config = ReconstructionConfig.parse({
+        "device": "CUDA:0",
+        "fragment_generation": {"fragment_size": "25"},
+    })
+
+    assert config.fragment_generation.device == "CUDA:0"
+    assert config.fragment_generation.fragment_size == 25

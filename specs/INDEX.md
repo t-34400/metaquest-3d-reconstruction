@@ -93,6 +93,20 @@ Read when changing:
 
 Related tests: `tests/test_packaging_metadata.py`, `tests/test_public_api_imports.py`.
 
+
+## `RECONSTRUCTION_CONFIG.md`
+
+Navigation for reconstruction configuration structure and dependency boundaries.
+
+Read when changing:
+
+* reconstruction configuration classes or parsing behavior
+* per-step reconstruction config module ownership
+* Open3D dependency boundaries in configuration modules
+* compatibility exports from `mq3drecon.config.reconstruction_config`
+
+Related tests: `tests/test_reconstruction_config.py`.
+
 ## `CLI_BEHAVIOR.md`
 
 Navigation for command-line interface behavior and migration shims.
