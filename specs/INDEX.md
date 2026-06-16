@@ -37,21 +37,56 @@ Read this before every specification, test, or implementation change.
 
 # Topic Specifications
 
-No topic-specific specifications have been added yet.
+## `LEGACY_BEHAVIOR.md`
+
+Navigation for legacy project layout and compatibility rules.
+
+Read when changing:
+
+* legacy input or output directory names
+* project-relative path resolution
+* generated artifact locations
+* migration behavior for existing script workflows
+
+Related tests: none currently identified.
+
+## `DATASETS_AND_CACHE.md`
+
+Navigation for persistent dataset and cache schemas.
+
+Read when changing:
+
+* `.npz` dataset serialization or loading
+* dataset cache file names or contents
+* optimized dataset compatibility
+* fragment dataset cache behavior
+* cache fallback or rebuild behavior
+
+Related tests: none currently identified.
+
+## `PUBLIC_API.md`
+
+Navigation for installable package API boundaries.
+
+Read when changing:
+
+* package namespace or import paths
+* CLI-to-library separation
+* public module exports
+* output directory behavior in package APIs
+* dependency boundaries for public modules
+
+Related tests: none currently identified.
 
 Expected future specification areas include:
 
-* legacy project layout and compatibility
-* installable package layout and public API boundaries
 * command-line interface behavior
-* dataset and cache file schemas
 * reconstruction configuration and Open3D dependency boundaries
 * COLMAP export behavior
 * logging, exceptions, and validation behavior
 * visualization and headless execution behavior
 
-Add entries here when new topic-specific specifications are created.
-Each entry should describe only navigation information:
+When adding more topic-specific specifications, each entry should describe only navigation information:
 
 * document path
 * responsibility boundary
