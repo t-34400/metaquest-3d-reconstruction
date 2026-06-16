@@ -1,7 +1,11 @@
 import argparse
 from pathlib import Path
 
-from pipeline.pipeline_processor import PipelineProcessor
+from _bootstrap import add_src_to_path
+
+add_src_to_path()
+
+from mq3drecon.workflows import run_depth_to_linear
 
 
 def parse_args():
@@ -15,7 +19,7 @@ def parse_args():
     parser.add_argument(
         "--config", "-c",
         type=Path,
-        default='config/pipeline_config.yml',
+        default=Path("config/pipeline_config.yml"),
         help="Path to the YAML config file for the pipeline"
     )
     args = parser.parse_args()
@@ -26,14 +30,9 @@ def parse_args():
     return args
 
 
-def main(args):
-    processor = PipelineProcessor(
-        project_dir=args.project_dir,
-        config_yml_path=args.config
-    )
-
+def main(args) -> None:
     print("[Info] Converting depth to linear map...")
-    processor.convert_depth_to_linear()
+    run_depth_to_linear(project_dir=args.project_dir, config_yml_path=args.config)
     print("[Info] Conversion completed.")
 
 
