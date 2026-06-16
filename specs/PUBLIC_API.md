@@ -150,6 +150,23 @@ Aliases for misspelled legacy names may be retained only as compatibility shims.
 New public API names must use correct spelling and clear ownership boundaries.
 ---
 
+
+# Top-Level Package Exports
+
+The top-level `mq3drecon` package is intentionally minimal during migration.
+
+It publicly exports only:
+
+* `__version__`
+* `MQ3DReconError`
+* `ProcessingError`
+
+Domain models, configuration objects, layouts, data I/O facades, processing functions,
+and workflow helpers must be imported from their documented focused subpackages.
+The top-level package must not grow into a broad facade for unrelated APIs.
+
+---
+
 # Currently Documented Public Symbols
 
 The following package-level symbols are currently documented as public during migration.

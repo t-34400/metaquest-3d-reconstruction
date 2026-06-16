@@ -168,22 +168,22 @@ Do not duplicate behavioral requirements from the target specification.
 
 # Current Implementation Areas
 
-The current implementation is script-oriented and primarily organized under
-`scripts/`.
+The package implementation is primarily organized under `src/mq3drecon/`.
+Legacy modules under `scripts/` are retained as command entrypoints or compatibility
+wrappers while migration support is required.
 
-Use this section only as a navigation aid while migrating toward a package
-layout.
+Use this section only as a navigation aid.
 
-| Area | Current location | Notes |
-| --- | --- | --- |
-| CLI entry points | `scripts/*.py` | Thin and mixed CLI/library scripts currently coexist. |
-| Configuration | `scripts/config/` | Includes pipeline, path, depth, YUV, and reconstruction configuration. |
-| Data I/O | `scripts/dataio/` | Includes color, depth, RGBD, and reconstruction I/O facades. |
-| Data models | `scripts/models/` | Includes datasets, transforms, camera characteristics, and enums. |
-| Pipeline orchestration | `scripts/pipeline/` | Coordinates higher-level processing steps. |
-| Processing implementation | `scripts/processing/` | Includes conversion and reconstruction implementation. |
-| Utilities | `scripts/utils/` | Includes image, depth, and parallel helper utilities. |
-| Third-party code | `scripts/third_party/` | Includes vendored COLMAP utilities. |
+| Area | Current location | Legacy compatibility location | Notes |
+| --- | --- | --- | --- |
+| CLI entry points | `scripts/*.py` | N/A | Commands delegate to package workflows when a workflow API exists. |
+| Configuration | `src/mq3drecon/config/` | `scripts/config/` | Legacy imports are compatibility wrappers. |
+| Data I/O | `src/mq3drecon/dataio/` | `scripts/dataio/` | Legacy imports are compatibility wrappers. |
+| Data models | `src/mq3drecon/models/` | `scripts/models/` | Legacy imports are compatibility wrappers. |
+| Pipeline orchestration | `src/mq3drecon/pipeline/` | `scripts/pipeline/` | Legacy imports are compatibility wrappers. |
+| Processing implementation | `src/mq3drecon/processing/` | `scripts/processing/` | Legacy imports are compatibility wrappers. |
+| Utilities | `src/mq3drecon/utils/` | `scripts/utils/` | Legacy imports are compatibility wrappers. |
+| Third-party code | `src/mq3drecon/third_party/` | `scripts/third_party/` | Legacy imports are compatibility wrappers. |
 
 ---
 
