@@ -38,3 +38,9 @@ def test_readme_documents_lightweight_and_full_pip_installs():
     assert "pip install mq3drecon" in readme
     assert "pip install 'mq3drecon[full]'" in readme
 
+
+
+def test_project_scripts_define_package_cli_entrypoint():
+    scripts = load_pyproject()["project"].get("scripts", {})
+
+    assert scripts["mq3drecon"] == "mq3drecon.cli:main"

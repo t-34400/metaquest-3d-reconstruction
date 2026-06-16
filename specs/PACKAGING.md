@@ -88,3 +88,11 @@ Packaging metadata must keep dependency boundaries explicit.
 `pyproject.toml` should define the default lightweight runtime dependencies under the project dependency list and optional feature dependencies under `project.optional-dependencies`.
 
 The conda development environment may include the full dependency set for contributor convenience, but it must not be treated as the default pip installation profile.
+
+---
+
+# Console Scripts
+
+Packaging metadata must expose the package-backed CLI command `mq3drecon` through `project.scripts`.
+
+The console script must point to a package module under `mq3drecon` and must not point to a legacy file under `scripts/`.

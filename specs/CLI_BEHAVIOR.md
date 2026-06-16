@@ -57,6 +57,32 @@ New behavior should be implemented in the package API first, then exposed throug
 
 ---
 
+# Package CLI Commands
+
+The installable package exposes a stable console command named:
+
+```bash
+mq3drecon
+```
+
+The package command must dispatch to package-backed workflows without importing legacy `scripts/` modules.
+
+The stable package subcommands are:
+
+| Subcommand | Responsibility |
+| --- | --- |
+| `yuv-to-rgb` | Convert captured YUV frames to RGB images. |
+| `depth-to-linear` | Convert depth frames to linear depth maps. |
+| `reconstruct` | Run the reconstruction pipeline. |
+| `export-colmap` | Export camera and image data to COLMAP-compatible output. |
+| `visualize-cameras` | Visualize camera trajectories. |
+
+Package CLI commands should prefer hyphenated option names such as `--project-dir` and `--output-dir`. Legacy underscore aliases such as `--project_dir` and `--output_dir` may remain available for migration compatibility.
+
+Package CLI commands that operate on a legacy project directory must require `--project-dir` explicitly. Commands that write package-oriented or export artifacts must require an explicit output location unless a future specification defines a safe default.
+
+---
+
 # Argument Compatibility
 
 Existing CLI arguments should remain compatible unless a specification explicitly approves a breaking change.

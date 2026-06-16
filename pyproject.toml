@@ -18,6 +18,9 @@ dependencies = [
     "PyYAML",
 ]
 
+[project.scripts]
+mq3drecon = "mq3drecon.cli:main"
+
 [project.optional-dependencies]
 io = []
 convert = []

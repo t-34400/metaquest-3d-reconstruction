@@ -208,3 +208,18 @@ See the [LICENSE](LICENSE) file for full text.
 
 * [ ] Implement carving to remove free-space artifacts
 * [ ] Add Nerfstudio export instructions
+## Command line usage
+
+The installable package provides a package-backed CLI:
+
+```bash
+mq3drecon --help
+mq3drecon yuv-to-rgb --project-dir /path/to/project --config config/pipeline_config.yml
+mq3drecon depth-to-linear --project-dir /path/to/project --config config/pipeline_config.yml
+mq3drecon reconstruct --project-dir /path/to/project --config config/pipeline_config.yml
+mq3drecon export-colmap --project-dir /path/to/project --output-dir /path/to/colmap-output
+mq3drecon visualize-cameras --project-dir /path/to/project
+```
+
+Legacy scripts under `scripts/` remain available as migration shims. New automation should prefer the `mq3drecon` command.
+
