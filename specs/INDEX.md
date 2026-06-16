@@ -78,11 +78,38 @@ Read when changing:
 
 Related tests: none currently identified.
 
+
+## `CLI_BEHAVIOR.md`
+
+Navigation for command-line interface behavior and migration shims.
+
+Read when changing:
+
+* `scripts/*.py` command behavior
+* package-backed CLI wrappers
+* command-line arguments or defaults
+* CLI error messages or exit statuses
+* visualization behavior exposed through commands
+
+Related tests: none currently identified.
+
+## `PROJECT_LAYOUT.md`
+
+Navigation for filesystem layout abstractions and generated artifact placement.
+
+Read when changing:
+
+* project path helper classes or functions
+* legacy output location behavior
+* package output directory behavior
+* COLMAP export path construction
+* relative path resolution for generated artifacts
+
+Related tests: none currently identified.
+
 Expected future specification areas include:
 
-* command-line interface behavior
 * reconstruction configuration and Open3D dependency boundaries
-* COLMAP export behavior
 * logging, exceptions, and validation behavior
 * visualization and headless execution behavior
 
