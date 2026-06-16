@@ -1,0 +1,26 @@
+import importlib
+
+
+def test_lightweight_public_imports_do_not_require_reconstruction_dependencies():
+    importlib.import_module("mq3drecon")
+
+    from mq3drecon.config import Depth2LinearConfig, ProjectPathConfig, Yuv2RgbConfig
+    from mq3drecon.dataio import DataIO, DepthDataIO, ImageDataIO, RGBDDataIO
+    from mq3drecon.models import CameraDataset, CoordinateSystem, DepthDataset, Side, Transforms
+    from mq3drecon.processing.depth_conversion import convert_depth_directory
+    from mq3drecon.processing.yuv_conversion import convert_yuv_directory
+
+    assert Depth2LinearConfig is not None
+    assert ProjectPathConfig is not None
+    assert Yuv2RgbConfig is not None
+    assert DataIO is not None
+    assert DepthDataIO is not None
+    assert ImageDataIO is not None
+    assert RGBDDataIO is not None
+    assert CameraDataset is not None
+    assert CoordinateSystem is not None
+    assert DepthDataset is not None
+    assert Side is not None
+    assert Transforms is not None
+    assert convert_depth_directory is not None
+    assert convert_yuv_directory is not None

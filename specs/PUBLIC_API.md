@@ -148,3 +148,58 @@ During migration from `scripts/` to `mq3drecon`, compatibility may be provided t
 Aliases for misspelled legacy names may be retained only as compatibility shims.
 
 New public API names must use correct spelling and clear ownership boundaries.
+---
+
+# Currently Documented Public Symbols
+
+The following package-level symbols are currently documented as public during migration.
+
+## `mq3drecon.models`
+
+* `CameraDataset`
+* `DepthDataset`
+* `Side`
+* `CoordinateSystem`
+* `Transforms`
+
+## `mq3drecon.config`
+
+Lightweight configuration exports:
+
+* `Depth2LinearConfig`
+* `Yuv2RgbConfig`
+* `ProjectPathConfig`
+
+Reconstruction and pipeline configuration exports are public but may import reconstruction-specific optional dependencies when accessed:
+
+* `PipelineConfigs`
+* `ReconstructionConfig`
+* `DepthConfidenceEstimationConfig`
+* `FragmentGenerationConfig`
+* `FragmentPoseRefinementConfig`
+* `IntegrationConfig`
+* `ColorOptimizationConfig`
+* `ColorAlignedDepthRenderingConfig`
+
+## `mq3drecon.dataio`
+
+Data I/O facade exports are public migration APIs:
+
+* `DataIO`
+* `ImageDataIO`
+* `DepthDataIO`
+* `RGBDDataIO`
+* `ReconstructionDataIO`
+
+## `mq3drecon.processing.yuv_conversion`
+
+* `convert_yuv_directory`
+
+## `mq3drecon.processing.depth_conversion`
+
+* `convert_depth_directory`
+
+## `mq3drecon.pipeline`
+
+* `PipelineProcessor`
+
