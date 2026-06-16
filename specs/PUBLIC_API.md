@@ -210,3 +210,11 @@ Package-backed workflow APIs for legacy-compatible commands:
 ## `mq3drecon.pipeline`
 
 * `PipelineProcessor`
+
+## `mq3drecon.layouts`
+
+Path layout exports are public migration APIs:
+
+* `LegacyProjectLayout`
+* `PackageOutputLayout`
+* `ColmapExportLayout`

@@ -5,6 +5,7 @@ import numpy as np
 from tqdm import tqdm
 
 from mq3drecon.dataio.data_io import DataIO
+from mq3drecon.layouts import ColmapExportLayout
 from mq3drecon.models.camera_dataset import CameraDataset
 from mq3drecon.models.side import Side
 from mq3drecon.models.transforms import CoordinateSystem, Transforms
@@ -152,16 +153,14 @@ def export_colmap_project(
         raise ValueError("interval must be greater than or equal to 1")
 
     project_dir = Path(project_dir)
-    output_dir = Path(output_dir)
+    layout = ColmapExportLayout(output_dir=output_dir)
 
     if not project_dir.is_dir():
         raise FileNotFoundError(f"Input directory does not exist: {project_dir}")
 
-    model_dir = output_dir / "distorted" / "sparse" / "0"
-    image_output_dir = output_dir / "images"
-
-    model_dir.mkdir(parents=True, exist_ok=True)
-    image_output_dir.mkdir(parents=True, exist_ok=True)
+    layout.ensure_directories()
+    model_dir = layout.get_model_dir()
+    image_output_dir = layout.get_image_dir()
 
     data_io = DataIO(project_dir=project_dir)
     dataset_map = load_colmap_dataset_map(

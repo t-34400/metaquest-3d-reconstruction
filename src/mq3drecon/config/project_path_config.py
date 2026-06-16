@@ -42,7 +42,7 @@ DEPTH_DIR_MAP = {
 
 DEPTH_DESCRIPTOR_CSV_MAP = {
     Side.LEFT: 'left_depth_descriptors.csv',
-    Side.RIGHT: 'right_depth_descriptors.csv',
+    Side.RIGHT: 'right_depth_descriptors.csv'
 }
 
 DEPTH_CONFIDENCE_MAP_DIR_MAP = {
@@ -78,7 +78,7 @@ FRAGMENT_PCD_CACHE_DIR_PATH = f'{CACHE_DIR_PATH}/pcd'
 
 class ImagePathConfig:
     def __init__(self, project_dir: Path):
-        self.project_dir = project_dir
+        self.project_dir = Path(project_dir)
 
 
     def get_yuv_dir(self, side: Side) -> Path:
@@ -107,8 +107,12 @@ class ImagePathConfig:
         return self.project_dir / CAMERA_CHARACTERISTICS_JSON_MAP[side]
     
 
-    def get_camera_format_format_json_path(self, side: Side) -> Path:
+    def get_camera_format_json_path(self, side: Side) -> Path:
         return self.project_dir / CAMERA_FORMAT_INFO_JSON_MAP[side]
+
+
+    def get_camera_format_format_json_path(self, side: Side) -> Path:
+        return self.get_camera_format_json_path(side=side)
     
 
     def get_hmd_pose_csv_path(self) -> Path:
@@ -124,12 +128,12 @@ class ImagePathConfig:
 
 
     def get_relative_path(self, path: Path) -> Path:
-        return path.relative_to(self.project_dir)
+        return Path(path).relative_to(self.project_dir)
 
 
 class DepthPathConfig:
     def __init__(self, project_dir: Path):
-        self.project_dir = project_dir
+        self.project_dir = Path(project_dir)
 
 
     def get_depth_dir(self, side: Side) -> Path:
@@ -174,12 +178,12 @@ class DepthPathConfig:
     
 
     def get_relative_path(self, path: Path) -> Path:
-        return path.relative_to(self.project_dir)
+        return Path(path).relative_to(self.project_dir)
 
 
 class RGBDPathConfig:
     def __init__(self, project_dir: Path):
-        self.project_dir = project_dir
+        self.project_dir = Path(project_dir)
 
 
     def get_color_aligned_depth_filename(self, timestamp: int) -> str:
@@ -197,7 +201,7 @@ class RGBDPathConfig:
 
 class ReconstructionPathConfig:
     def __init__(self, project_dir: Path):
-        self.project_dir = project_dir
+        self.project_dir = Path(project_dir)
 
     
     def get_fragment_dir(self) -> Path:
@@ -239,13 +243,17 @@ class ReconstructionPathConfig:
 
     
     def get_relative_path(self, path: Path) -> Path:
-        return path.relative_to(self.project_dir)
+        return Path(path).relative_to(self.project_dir)
 
 
-class ProjectPathConfig:
+class LegacyProjectLayout:
     def __init__(self, project_dir: Path):
-        self.project_dir = project_dir
-        self.image = ImagePathConfig(project_dir=project_dir)
-        self.depth = DepthPathConfig(project_dir=project_dir)
-        self.rgbd = RGBDPathConfig(project_dir=project_dir)
-        self.reconstruction = ReconstructionPathConfig(project_dir=project_dir)
+        self.project_dir = Path(project_dir)
+        self.image = ImagePathConfig(project_dir=self.project_dir)
+        self.depth = DepthPathConfig(project_dir=self.project_dir)
+        self.rgbd = RGBDPathConfig(project_dir=self.project_dir)
+        self.reconstruction = ReconstructionPathConfig(project_dir=self.project_dir)
+
+
+class ProjectPathConfig(LegacyProjectLayout):
+    pass

@@ -4,7 +4,7 @@ from typing import Any
 import yaml
 
 from mq3drecon.config.depth_to_linear_config import Depth2LinearConfig
-from mq3drecon.config.project_path_config import ProjectPathConfig
+from mq3drecon.layouts import LegacyProjectLayout
 from mq3drecon.config.yuv_to_rgb_config import Yuv2RgbConfig
 from mq3drecon.dataio.depth_data_io import DepthDataIO
 from mq3drecon.dataio.image_data_io import ImageDataIO
@@ -23,12 +23,12 @@ def _load_config_section(config_yml_path: Path, section_name: str) -> dict[str, 
 
 
 def run_yuv_to_rgb(project_dir: Path, config_yml_path: Path) -> None:
-    path_config = ProjectPathConfig(project_dir=project_dir)
+    path_config = LegacyProjectLayout(project_dir=project_dir)
     config = Yuv2RgbConfig.parse(_load_config_section(config_yml_path, "yuv_to_rgb"))
     convert_yuv_directory(image_io=ImageDataIO(image_path_config=path_config.image), config=config)
 
 
 def run_depth_to_linear(project_dir: Path, config_yml_path: Path) -> None:
-    path_config = ProjectPathConfig(project_dir=project_dir)
+    path_config = LegacyProjectLayout(project_dir=project_dir)
     config = Depth2LinearConfig.parse(_load_config_section(config_yml_path, "depth_to_linear"))
     convert_depth_directory(depth_data_io=DepthDataIO(depth_path_config=path_config.depth), depth_to_linear_config=config)
