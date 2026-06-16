@@ -207,6 +207,7 @@ Package-backed workflow APIs for legacy-compatible commands:
 * `run_depth_to_linear`
 * `export_colmap_project`
 * `run_reconstruct_scene`
+* `run_visualize_camera_trajectories`
 
 ## `mq3drecon.pipeline`
 
