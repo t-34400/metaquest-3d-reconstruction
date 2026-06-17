@@ -16,46 +16,68 @@ This project provides a complete pipeline for generating 3D reconstructions usin
 
 ## 🚀 Setup
 
-### Lightweight pip install
+### Lightweight Installation
 
-The default pip installation is the lightweight profile. It supports configuration, layouts, models, data I/O imports, conversion workflows, and COLMAP export imports without installing Open3D.
+The default installation is the lightweight profile. It supports configuration, layouts, models, data I/O APIs, conversion workflows, and COLMAP export imports without installing Open3D.
 
 ```bash
-pip install mq3drecon
+uv venv --python 3.10
+source .venv/bin/activate
+
+uv pip install -e .
 ```
 
-### Full pip install
+### Full Installation
 
 Install the full optional profile when you need Open3D-backed reconstruction and visualization dependencies.
 
 ```bash
-pip install 'mq3drecon[full]'
+uv pip install -e ".[full]"
 ```
 
 Feature-specific profiles are also available for narrower environments:
 
 ```bash
-pip install 'mq3drecon[convert]'
-pip install 'mq3drecon[io]'
-pip install 'mq3drecon[reconstruction]'
+uv pip install -e ".[convert]"
+uv pip install -e ".[io]"
+uv pip install -e ".[reconstruction]"
 ```
 
-### Environment Setup (with conda)
+---
 
-We recommend using [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/) to manage development environments. The conda environment may include the full dependency set for contributor convenience.
+## 💻 Command Line Usage
 
-Create and activate the environment:
+The installable package provides a package-backed CLI:
 
 ```bash
-conda env create -f environment.yml
-conda activate mq3drecon
+mq3drecon --help
 ```
+
+Show command-specific help:
+
+```bash
+mq3drecon yuv-to-rgb --help
+mq3drecon depth-to-linear --help
+mq3drecon reconstruct --help
+mq3drecon export-colmap --help
+mq3drecon visualize-cameras --help
+```
+
+Legacy scripts under `scripts/` remain available as migration shims. New automation should prefer the `mq3drecon` command.
 
 ---
 
 ## 🔧 Processing Pipeline
 
 ### Step 1: Convert Passthrough Images to RGB
+
+```bash
+mq3drecon yuv-to-rgb \
+  --project-dir path/to/your/project \
+  --config config/pipeline_config.yml
+```
+
+Legacy equivalent:
 
 ```bash
 python scripts/convert_yuv_to_rgb.py \
@@ -73,6 +95,14 @@ This generates:
 ---
 
 ### Step 2: Reconstruct 3D Scene
+
+```bash
+mq3drecon reconstruct \
+  --project-dir path/to/your/project \
+  --config config/pipeline_config.yml
+```
+
+Legacy equivalent:
 
 ```bash
 python scripts/reconstruct_scene.py \
@@ -101,6 +131,17 @@ Depending on your YAML config (`reconstruction:` section), the following additio
 ### Step 3: Export COLMAP Project (Optional)
 
 ```bash
+mq3drecon export-colmap \
+  --project-dir path/to/your/project \
+  --output-dir path/to/output/colmap_project \
+  --use-colored-pointcloud \
+  --use-optimized-color-dataset \
+  --interval 1
+```
+
+Legacy equivalent:
+
+```bash
 python scripts/build_colmap_project.py \
   --project_dir path/to/your/project \
   --output_dir path/to/output/colmap_project \
@@ -111,13 +152,21 @@ python scripts/build_colmap_project.py \
 
 **Options:**
 
-* `--use_colored_pointcloud`: Include colored point cloud if available.
-* `--use_optimized_color_dataset`: Use optimized color dataset.
+* `--use-colored-pointcloud`: Include colored point cloud if available.
+* `--use-optimized-color-dataset`: Use optimized color dataset.
 * `--interval`: Export every N-th frame.
 
 ---
 
-### \[Optional] Convert Raw Depth to Linear Depth Map
+### [Optional] Convert Raw Depth to Linear Depth Map
+
+```bash
+mq3drecon depth-to-linear \
+  --project-dir path/to/your/project \
+  --config config/pipeline_config.yml
+```
+
+Legacy equivalent:
 
 ```bash
 python scripts/convert_depth_to_linear_map.py \
@@ -129,37 +178,182 @@ This step is **standalone** and not required for other scripts.
 
 ---
 
-## 🛠️ Custom Data Processing
+### [Optional] Visualize Camera Trajectories
 
-You can write your own scripts by importing the unified `DataIO` interface:
-
-```python
-from dataio.data_io import DataIO
-from models.side import Side
-from models.transforms import CoordinateSystem
-
-
-data_io = DataIO(project_dir=args.project_dir)
-
-# Load depth maps
-dataset = data_io.depth.load_depth_dataset(Side.LEFT)
-depth_map = data_io.depth.load_depth_map_by_index(Side.LEFT, dataset, index=0)
-
-# Load RGB frames
-color_dataset = data_io.color.load_color_dataset(Side.LEFT)
-timestamp = color_dataset.timestamps[0]
-rgb = data_io.color.load_rgb(Side.LEFT, timestamp)
-
-color_dataset.transforms = color_dataset.transforms.convert_coordinate_system(
-    target_coordinate_system=CoordinateSystem.OPEN3D,
-    is_camera=True
-)
+```bash
+mq3drecon visualize-cameras \
+  --project-dir path/to/your/project
 ```
 
-Explore:
+Legacy equivalent:
 
-* `scripts/dataio/` for loadable datasets
-* `scripts/models/` for internal data structures
+```bash
+python scripts/visualize_camera_trajectories.py \
+  --project_dir path/to/your/project
+```
+
+---
+
+## 🛠️ Custom Data Processing
+
+You can write custom processing scripts using the public package APIs. Prefer imports from `mq3drecon.*`; do not import from `scripts.*` in downstream projects.
+
+### Load RGB frames
+
+```python
+from pathlib import Path
+
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import Side
+
+project_dir = Path("data/projects/test")
+data_io = DataIO(project_dir=project_dir)
+
+side = Side.LEFT
+color_dataset = data_io.color.load_color_dataset(side)
+
+timestamp = int(color_dataset.timestamps[0])
+rgb = data_io.color.load_rgb(side, timestamp)
+
+print(rgb.shape)
+```
+
+`load_rgb()` returns an RGB `numpy.ndarray`. Convert it to BGR before passing it to OpenCV APIs that expect BGR images:
+
+```python
+import cv2
+
+bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+```
+
+### Load camera calibration and capture format metadata
+
+```python
+from pathlib import Path
+
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import Side
+
+project_dir = Path("data/projects/test")
+data_io = DataIO(project_dir=project_dir)
+
+side = Side.LEFT
+
+camera = data_io.color.load_camera_characteristics(side)
+format_info = data_io.color.load_image_format_info(side)
+
+print(camera.width, camera.height)
+print(camera.fx, camera.fy)
+print(camera.cx, camera.cy)
+print(camera.transl)
+print(camera.rot_quat)
+
+print(format_info.width, format_info.height)
+print(format_info.format)
+print(format_info.base_time.unix_time_ns)
+for plane in format_info.planes:
+    print(plane.buffer_size, plane.row_stride, plane.pixel_stride)
+```
+
+Use `CameraDataset.get_intrinsic_matrices()` when you only need per-frame intrinsic matrices. Use `load_camera_characteristics()` when you also need the camera-local offset stored in QRC metadata.
+
+### Use OpenCV/COLMAP-compatible camera poses
+
+```python
+from pathlib import Path
+
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import CoordinateSystem, Side
+
+project_dir = Path("data/projects/test")
+data_io = DataIO(project_dir=project_dir)
+
+side = Side.LEFT
+color_dataset = data_io.color.load_color_dataset(side)
+
+opencv_dataset = color_dataset
+opencv_dataset.transforms = color_dataset.transforms.convert_coordinate_system(
+    target_coordinate_system=CoordinateSystem.COLMAP,
+    is_camera=True,
+)
+
+index = 0
+K = opencv_dataset.get_intrinsic_matrices()[index]
+T_world_to_camera = opencv_dataset.transforms.extrinsics_wc[index]
+T_camera_to_world = opencv_dataset.transforms.extrinsics_cw[index]
+camera_center_world = opencv_dataset.transforms.positions_wc[index]
+camera_rotation_xyzw = opencv_dataset.transforms.rotations_wc[index]
+```
+
+`CoordinateSystem.COLMAP` uses the camera convention commonly expected by OpenCV/COLMAP-style projection code:
+
+```text
+x: right
+y: down
+z: forward
+```
+
+Useful dataset fields:
+
+* `timestamps`: frame timestamps
+* `image_file_names`: RGB file names
+* `fx`, `fy`, `cx`, `cy`: per-frame intrinsics
+* `widths`, `heights`: per-frame image sizes
+* `transforms.positions_wc`: camera centers in world coordinates
+* `transforms.rotations_wc`: camera-to-world quaternions in `(x, y, z, w)` order
+* `transforms.extrinsics_wc`: world-to-camera `4x4` matrices
+* `transforms.extrinsics_cw`: camera-to-world `4x4` matrices
+
+### Load depth maps and confidence maps
+
+```python
+from pathlib import Path
+
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import Side
+
+project_dir = Path("data/projects/test")
+data_io = DataIO(project_dir=project_dir)
+
+side = Side.LEFT
+depth_dataset = data_io.depth.load_depth_dataset(side)
+
+depth_map = data_io.depth.load_depth_map_by_index(
+    side,
+    depth_dataset,
+    index=0,
+)
+
+confidence = data_io.depth.load_confidence_map(
+    side,
+    int(depth_dataset.timestamps[0]),
+)
+
+if confidence is not None:
+    print(confidence.shape)
+    print(confidence.confidence_map)
+    print(confidence.valid_count)
+```
+
+### Public API imports
+
+The lightweight package profile exposes these public data models without requiring Open3D:
+
+```python
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import (
+    BaseTime,
+    CameraCharacteristics,
+    CameraDataset,
+    ConfidenceMap,
+    CoordinateSystem,
+    DepthDataset,
+    ImageFormatInfo,
+    ImagePlaneInfo,
+    Side,
+    Transforms,
+)
+```
 
 ---
 
@@ -208,18 +402,3 @@ See the [LICENSE](LICENSE) file for full text.
 
 * [ ] Implement carving to remove free-space artifacts
 * [ ] Add Nerfstudio export instructions
-## Command line usage
-
-The installable package provides a package-backed CLI:
-
-```bash
-mq3drecon --help
-mq3drecon yuv-to-rgb --project-dir /path/to/project --config config/pipeline_config.yml
-mq3drecon depth-to-linear --project-dir /path/to/project --config config/pipeline_config.yml
-mq3drecon reconstruct --project-dir /path/to/project --config config/pipeline_config.yml
-mq3drecon export-colmap --project-dir /path/to/project --output-dir /path/to/colmap-output
-mq3drecon visualize-cameras --project-dir /path/to/project
-```
-
-Legacy scripts under `scripts/` remain available as migration shims. New automation should prefer the `mq3drecon` command.
-
