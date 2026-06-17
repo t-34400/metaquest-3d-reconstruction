@@ -200,7 +200,7 @@ You can write custom processing scripts using the public package APIs. Prefer im
 
 ### Load RGB frames
 
-Generate RGB images from YUV inputs on demand before loading color datasets:
+Generate RGB images on demand before loading a color dataset. `run_yuv_to_rgb()` uses the default YUV conversion settings when no config is passed.
 
 ```python
 from pathlib import Path
@@ -210,13 +210,9 @@ from mq3drecon.models import Side
 from mq3drecon.workflows import has_rgb_images, run_yuv_to_rgb
 
 project_dir = Path("data/projects/test")
-config_path = Path("config/pipeline_config.yml")
 
 if not has_rgb_images(project_dir):
-    run_yuv_to_rgb(
-        project_dir=project_dir,
-        config_yml_path=config_path,
-    )
+    run_yuv_to_rgb(project_dir)
 
 data_io = DataIO(project_dir=project_dir)
 
@@ -229,17 +225,19 @@ rgb = data_io.color.load_rgb(side, timestamp)
 print(rgb.shape)
 ```
 
-Use `get_rgb_image_status()` when you need diagnostics before deciding whether to convert:
+Pass a typed config when you need non-default filtering behavior:
 
 ```python
-from mq3drecon.workflows import get_rgb_image_status
+from mq3drecon.config import Yuv2RgbConfig
+from mq3drecon.workflows import run_yuv_to_rgb
 
-status = get_rgb_image_status(project_dir)
-
-print(status.left_count)
-print(status.right_count)
-print(status.is_complete)
-print(status.is_balanced)
+run_yuv_to_rgb(
+    project_dir,
+    config=Yuv2RgbConfig(
+        blur_filter=True,
+        blur_threshold=50.0,
+    ),
+)
 ```
 
 `load_rgb()` returns an RGB `numpy.ndarray`. Convert it to BGR before passing it to OpenCV APIs that expect BGR images:
