@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mq3drecon"
+version = "0.1.0"
+description = "Meta Quest 3D reconstruction toolkit"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "tqdm",
+    "opencv-python",
+    "PyYAML",
+]
+
+[project.scripts]
+mq3drecon = "mq3drecon.cli:main"
+
+[project.optional-dependencies]
+io = []
+convert = []
+reconstruction = [
+    "open3d==0.19.0",
+]
+full = [
+    "open3d==0.19.0",
+    "matplotlib",
+    "requests",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

@@ -1,4 +1,3 @@
-def log_step(title: str):
-    print("\n" + "="*40)
-    print(f">>> [Step] {title}")
-    print("="*40)
+"""Compatibility wrapper for ``mq3drecon.processing.reconstruction.utils.log_utils``."""
+
+from mq3drecon.processing.reconstruction.utils.log_utils import *  # noqa: F401,F403

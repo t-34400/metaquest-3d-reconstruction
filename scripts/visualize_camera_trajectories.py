@@ -1,8 +1,12 @@
 import argparse
+import sys
 from pathlib import Path
 
-from dataio.data_io import DataIO
-from processing.test.visualize_camera_tragectories import visualize_camera_trajectories
+from _bootstrap import add_src_to_path
+
+add_src_to_path()
+
+from mq3drecon.workflows import run_visualize_camera_trajectories
 
 
 def parse_args():
@@ -22,12 +26,15 @@ def parse_args():
 
 
 def main(args):
-    data_io = DataIO(project_dir=args.project_dir)
-    visualize_camera_trajectories(data_io=data_io)
+    run_visualize_camera_trajectories(project_dir=args.project_dir)
 
 
 if __name__ == "__main__":
     args = parse_args()
 
     print(f"[Info] Project Directory: {args.project_dir}")
-    main(args)
+    try:
+        main(args)
+    except (OSError, ValueError) as exc:
+        print(f"[Error] {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc

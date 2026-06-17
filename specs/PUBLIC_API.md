@@ -1,0 +1,91 @@
+# Public API Specification
+
+## Purpose
+
+This document defines public import boundaries for the installable MQ3DRecon package.
+
+It owns requirements for:
+
+* package namespace stability
+* lightweight public imports
+* migration exports from legacy script modules
+* CLI-to-library separation
+* optional dependency visibility from public modules
+
+Packaging dependency profiles are specified in `PACKAGING.md`.
+CLI behavior is specified in `CLI_BEHAVIOR.md`.
+Project layout behavior is specified in `PROJECT_LAYOUT.md`.
+Dataset schemas are specified in `DATASETS_AND_CACHE.md`.
+
+---
+
+# Package Namespace
+
+The installable package namespace is:
+
+```python
+mq3drecon
+```
+
+New library APIs must live under the package namespace rather than under `scripts/`.
+Legacy script modules may remain as compatibility wrappers during migration, but they are not long-term public package APIs.
+
+---
+
+# Lightweight Import Boundary
+
+The default lightweight installation profile must support importing public package modules that do not execute Open3D-backed reconstruction behavior.
+
+The following imports are part of the lightweight public boundary:
+
+```python
+import mq3drecon
+from mq3drecon import MQ3DReconError, ProcessingError
+from mq3drecon.config import Depth2LinearConfig, PipelineConfigs, ProjectPathConfig, ReconstructionConfig, Yuv2RgbConfig
+from mq3drecon.dataio import DataIO, DepthDataIO, ImageDataIO, RGBDDataIO, ReconstructionDataIO
+from mq3drecon.layouts import ColmapExportLayout, LegacyProjectLayout, PackageOutputLayout
+from mq3drecon.models import CameraDataset, CoordinateSystem, DepthDataset, Side, Transforms
+from mq3drecon.pipeline import PipelineProcessor
+from mq3drecon.processing.depth_conversion import convert_depth_directory
+from mq3drecon.processing.visualization import get_camera_visualization_lines, visualize_camera_trajectories
+from mq3drecon.processing.yuv_conversion import convert_yuv_directory
+from mq3drecon.workflows import export_colmap_project, run_depth_to_linear, run_yuv_to_rgb
+```
+
+Importing these modules must not require Open3D.
+
+---
+
+# Reconstruction Public Boundary
+
+Open3D-backed reconstruction functionality is public only when the reconstruction optional dependency profile is installed.
+
+Modules that execute reconstruction behavior may import Open3D at module load or when the operation is called, provided those imports are not required by the lightweight public boundary.
+
+Configuration objects for reconstruction remain lightweight public API and must not construct Open3D runtime objects directly.
+
+---
+
+# Explicit Exports
+
+Public migration modules should expose their supported API with explicit imports and `__all__` lists.
+
+Public modules should not depend on dynamic `__getattr__`-based lazy migration shims unless a future specification documents the compatibility reason.
+
+---
+
+# CLI and Library Boundary
+
+Library workflows must be callable without launching a separate command-line process.
+
+CLI entrypoints may parse arguments and convert expected exceptions into process exit statuses, but processing behavior must be owned by package modules.
+
+---
+
+# Legacy Import Compatibility
+
+Legacy modules under `scripts/` may re-export package APIs to preserve existing script-oriented workflows during migration.
+
+Compatibility wrappers must not introduce new behavior that is unavailable from the package namespace.
+
+Misspelled legacy module names may remain as compatibility aliases, but new public package names must use corrected spelling.

@@ -1,7 +1,13 @@
 import argparse
 from pathlib import Path
+import sys
 
-from pipeline.pipeline_processor import PipelineProcessor
+from _bootstrap import add_src_to_path
+
+add_src_to_path()
+
+from mq3drecon.errors import MQ3DReconError
+from mq3drecon.workflows import run_reconstruct_scene
 
 
 def parse_args():
@@ -10,13 +16,13 @@ def parse_args():
         "--project_dir", "-p",
         type=Path,
         required=True,
-        help="Path to the project directory containing QRC data."
+        help="Path to the project directory containing QRC data.",
     )
     parser.add_argument(
         "--config", "-c",
         type=Path,
-        default='config/pipeline_config.yml',
-        help="Path to the YAML config file for the pipeline"
+        default=Path("config/pipeline_config.yml"),
+        help="Path to the YAML config file for the pipeline",
     )
     args = parser.parse_args()
 
@@ -26,19 +32,19 @@ def parse_args():
     return args
 
 
-def main(args):
-    processor = PipelineProcessor(
-        project_dir=args.project_dir,
-        config_yml_path=args.config
-    )
-
-    print("[Info] Reconstructing scene...")
-    processor.reconstruct_scene()
-    print("[Info] Reconstruction completed.")
+def main(args) -> int:
+    try:
+        print("[Info] Reconstructing scene...")
+        run_reconstruct_scene(project_dir=args.project_dir, config_yml_path=args.config)
+        print("[Info] Reconstruction completed.")
+        return 0
+    except (MQ3DReconError, FileNotFoundError, ValueError, OSError) as exc:
+        print(f"[Error] {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
     args = parse_args()
 
     print(f"[Info] Project Directory: {args.project_dir}")
-    main(args)
+    raise SystemExit(main(args))

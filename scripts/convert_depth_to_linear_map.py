@@ -1,7 +1,13 @@
 import argparse
 from pathlib import Path
+import sys
 
-from pipeline.pipeline_processor import PipelineProcessor
+from _bootstrap import add_src_to_path
+
+add_src_to_path()
+
+from mq3drecon.errors import MQ3DReconError
+from mq3drecon.workflows import run_depth_to_linear
 
 
 def parse_args():
@@ -15,7 +21,7 @@ def parse_args():
     parser.add_argument(
         "--config", "-c",
         type=Path,
-        default='config/pipeline_config.yml',
+        default=Path("config/pipeline_config.yml"),
         help="Path to the YAML config file for the pipeline"
     )
     args = parser.parse_args()
@@ -26,19 +32,19 @@ def parse_args():
     return args
 
 
-def main(args):
-    processor = PipelineProcessor(
-        project_dir=args.project_dir,
-        config_yml_path=args.config
-    )
-
-    print("[Info] Converting depth to linear map...")
-    processor.convert_depth_to_linear()
-    print("[Info] Conversion completed.")
+def main(args) -> int:
+    try:
+        print("[Info] Converting depth to linear map...")
+        run_depth_to_linear(project_dir=args.project_dir, config_yml_path=args.config)
+        print("[Info] Conversion completed.")
+        return 0
+    except (MQ3DReconError, FileNotFoundError, ValueError, OSError) as exc:
+        print(f"[Error] {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
     args = parse_args()
 
     print(f"[Info] Project Directory: {args.project_dir}")
-    main(args)
+    raise SystemExit(main(args))
