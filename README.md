@@ -200,26 +200,24 @@ You can write custom processing scripts using the public package APIs. Prefer im
 
 ### Load RGB frames
 
-If RGB images have not been generated yet, check their status before loading datasets:
-
-```python
-from mq3drecon.workflows import get_rgb_image_status, has_rgb_images
-
-status = get_rgb_image_status(project_dir)
-print(status.left_count, status.right_count)
-
-if not has_rgb_images(project_dir):
-    # Optionally run mq3drecon.workflows.run_yuv_to_rgb(...)
-    raise RuntimeError("RGB images have not been generated")
-```
+Generate RGB images from YUV inputs on demand before loading color datasets:
 
 ```python
 from pathlib import Path
 
 from mq3drecon.dataio import DataIO
 from mq3drecon.models import Side
+from mq3drecon.workflows import has_rgb_images, run_yuv_to_rgb
 
 project_dir = Path("data/projects/test")
+config_path = Path("config/pipeline_config.yml")
+
+if not has_rgb_images(project_dir):
+    run_yuv_to_rgb(
+        project_dir=project_dir,
+        config_yml_path=config_path,
+    )
+
 data_io = DataIO(project_dir=project_dir)
 
 side = Side.LEFT
@@ -229,6 +227,19 @@ timestamp = int(color_dataset.timestamps[0])
 rgb = data_io.color.load_rgb(side, timestamp)
 
 print(rgb.shape)
+```
+
+Use `get_rgb_image_status()` when you need diagnostics before deciding whether to convert:
+
+```python
+from mq3drecon.workflows import get_rgb_image_status
+
+status = get_rgb_image_status(project_dir)
+
+print(status.left_count)
+print(status.right_count)
+print(status.is_complete)
+print(status.is_balanced)
 ```
 
 `load_rgb()` returns an RGB `numpy.ndarray`. Convert it to BGR before passing it to OpenCV APIs that expect BGR images:
