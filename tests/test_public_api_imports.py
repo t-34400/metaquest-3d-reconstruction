@@ -15,7 +15,18 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
     from mq3drecon.config import Depth2LinearConfig, LegacyProjectLayout, ProjectPathConfig, Yuv2RgbConfig
     from mq3drecon.dataio import DataIO, DepthDataIO, ImageDataIO, RGBDDataIO, ReconstructionDataIO
     from mq3drecon.layouts import ColmapExportLayout, PackageOutputLayout
-    from mq3drecon.models import CameraDataset, CoordinateSystem, DepthDataset, Side, Transforms
+    from mq3drecon.models import (
+        BaseTime,
+        CameraCharacteristics,
+        CameraDataset,
+        ConfidenceMap,
+        CoordinateSystem,
+        DepthDataset,
+        ImageFormatInfo,
+        ImagePlaneInfo,
+        Side,
+        Transforms,
+    )
     from mq3drecon.pipeline import PipelineProcessor
     from mq3drecon.processing.depth_conversion import convert_depth_directory
     from mq3drecon.processing.yuv_conversion import convert_yuv_directory
@@ -32,9 +43,14 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
     assert ReconstructionDataIO is not None
     assert ColmapExportLayout is not None
     assert PackageOutputLayout is not None
+    assert BaseTime is not None
+    assert CameraCharacteristics is not None
     assert CameraDataset is not None
+    assert ConfidenceMap is not None
     assert CoordinateSystem is not None
     assert DepthDataset is not None
+    assert ImageFormatInfo is not None
+    assert ImagePlaneInfo is not None
     assert Side is not None
     assert Transforms is not None
     assert PipelineProcessor is not None
@@ -71,8 +87,10 @@ def test_lightweight_public_imports_work_when_open3d_is_unavailable():
 def test_public_migration_modules_use_explicit_exports():
     import mq3drecon.config as config
     import mq3drecon.dataio as dataio
+    import mq3drecon.models as models
     import mq3drecon.pipeline as pipeline
 
     assert "__getattr__" not in config.__dict__
     assert "__getattr__" not in dataio.__dict__
+    assert "__getattr__" not in models.__dict__
     assert "__getattr__" not in pipeline.__dict__
