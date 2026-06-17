@@ -53,3 +53,18 @@ def test_package_cli_converts_expected_workflow_errors_to_status_one(tmp_path, m
     captured = capsys.readouterr()
     assert status == 1
     assert "[Error] bad config" in captured.err
+
+
+def test_package_cli_omits_config_path_when_config_argument_is_omitted(tmp_path, monkeypatch):
+    captured = {}
+
+    def run(*, project_dir, config_yml_path):
+        captured["project_dir"] = project_dir
+        captured["config_yml_path"] = config_yml_path
+
+    monkeypatch.setattr(cli, "run_yuv_to_rgb", run)
+
+    status = cli.main(["yuv-to-rgb", "--project-dir", str(tmp_path)])
+
+    assert status == 0
+    assert captured == {"project_dir": tmp_path, "config_yml_path": None}

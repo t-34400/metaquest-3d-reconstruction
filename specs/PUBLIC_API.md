@@ -91,7 +91,19 @@ run_depth_to_linear(project_dir, config=Depth2LinearConfig())
 run_depth_to_linear(project_dir, config_yml_path=config_yml_path)
 ```
 
-`Yuv2RgbConfig()` and `Depth2LinearConfig()` must be default-constructible.
+Pipeline-level configuration is also default-constructible for workflows that execute multiple processing stages:
+
+```python
+from mq3drecon.config import PipelineConfigs
+from mq3drecon.pipeline import PipelineProcessor
+from mq3drecon.workflows import run_reconstruct_scene
+
+PipelineConfigs()
+PipelineProcessor(project_dir)
+run_reconstruct_scene(project_dir)
+```
+
+`Yuv2RgbConfig()`, `Depth2LinearConfig()`, `ReconstructionConfig()`, and `PipelineConfigs()` must be default-constructible.
 When both `config` and `config_yml_path` are passed to the same conversion workflow, the workflow must reject the ambiguous input with `ValueError`.
 
 CLI defaults are specified separately in `CLI_BEHAVIOR.md`; this section defines Python public API behavior.

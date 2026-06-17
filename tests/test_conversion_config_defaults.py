@@ -100,3 +100,31 @@ def test_run_depth_to_linear_uses_default_config_when_config_is_omitted(tmp_path
 
     assert captured["project_dir"] == tmp_path
     assert captured["config"] == Depth2LinearConfig()
+
+
+def test_pipeline_configs_are_default_constructible():
+    from mq3drecon.config import PipelineConfigs, ReconstructionConfig
+
+    configs = PipelineConfigs()
+
+    assert configs.yuv_to_rgb == Yuv2RgbConfig()
+    assert configs.depth_to_linear == Depth2LinearConfig()
+    assert configs.reconstruction == ReconstructionConfig()
+
+
+def test_pipeline_processor_uses_default_configs_when_config_path_is_omitted(tmp_path, monkeypatch):
+    from mq3drecon.config import PipelineConfigs
+    import mq3drecon.pipeline.pipeline_processor as pipeline_processor
+
+    captured = {}
+
+    class DummyDataIO:
+        def __init__(self, *, project_dir):
+            captured["project_dir"] = project_dir
+
+    monkeypatch.setattr(pipeline_processor, "DataIO", DummyDataIO)
+
+    processor = pipeline_processor.PipelineProcessor(tmp_path)
+
+    assert captured["project_dir"] == tmp_path
+    assert processor.pipeline_configs == PipelineConfigs()
