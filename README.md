@@ -200,6 +200,19 @@ You can write custom processing scripts using the public package APIs. Prefer im
 
 ### Load RGB frames
 
+If RGB images have not been generated yet, check their status before loading datasets:
+
+```python
+from mq3drecon.workflows import get_rgb_image_status, has_rgb_images
+
+status = get_rgb_image_status(project_dir)
+print(status.left_count, status.right_count)
+
+if not has_rgb_images(project_dir):
+    # Optionally run mq3drecon.workflows.run_yuv_to_rgb(...)
+    raise RuntimeError("RGB images have not been generated")
+```
+
 ```python
 from pathlib import Path
 
