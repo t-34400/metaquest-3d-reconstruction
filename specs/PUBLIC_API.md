@@ -49,12 +49,26 @@ from mq3drecon.pipeline import PipelineProcessor
 from mq3drecon.processing.depth_conversion import convert_depth_directory
 from mq3drecon.processing.visualization import get_camera_visualization_lines, visualize_camera_trajectories
 from mq3drecon.processing.yuv_conversion import convert_yuv_directory
-from mq3drecon.workflows import export_colmap_project, run_depth_to_linear, run_yuv_to_rgb
+from mq3drecon.workflows import RgbImageStatus, export_colmap_project, get_rgb_image_status, has_rgb_images, run_depth_to_linear, run_yuv_to_rgb
 ```
 
 Importing these modules must not require Open3D.
 
 ---
+
+# RGB Dataset Readiness Helpers
+
+The workflows public boundary exposes lightweight helpers for checking whether RGB images are already available in a legacy project layout:
+
+```python
+from mq3drecon.workflows import RgbImageStatus, get_rgb_image_status, has_rgb_images
+```
+
+These helpers must inspect the documented legacy RGB directories without running YUV-to-RGB conversion, building datasets, or importing Open3D-backed reconstruction dependencies.
+
+`has_rgb_images(project_dir)` returns `True` only when both left and right RGB image directories contain at least one `.png` image.
+
+`get_rgb_image_status(project_dir)` returns counts and resolved left/right RGB directories so callers can decide whether to call `run_yuv_to_rgb` explicitly.
 
 # Reconstruction Public Boundary
 
