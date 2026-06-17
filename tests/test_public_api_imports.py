@@ -30,7 +30,14 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
     from mq3drecon.pipeline import PipelineProcessor
     from mq3drecon.processing.depth_conversion import convert_depth_directory
     from mq3drecon.processing.yuv_conversion import convert_yuv_directory
-    from mq3drecon.workflows import RgbImageStatus, export_colmap_project, get_rgb_image_status, has_rgb_images, run_depth_to_linear, run_yuv_to_rgb
+    from mq3drecon.workflows import (
+        RgbImageStatus,
+        export_colmap_project,
+        get_rgb_image_status,
+        has_rgb_images,
+        run_depth_to_linear,
+        run_yuv_to_rgb,
+    )
 
     assert Depth2LinearConfig is not None
     assert LegacyProjectLayout is not None
@@ -72,7 +79,14 @@ def test_lightweight_public_imports_work_when_open3d_is_unavailable():
         from mq3drecon.config import PipelineConfigs, ReconstructionConfig
         from mq3drecon.dataio import DataIO, ReconstructionDataIO
         from mq3drecon.pipeline import PipelineProcessor
-        from mq3drecon.workflows import RgbImageStatus, export_colmap_project, get_rgb_image_status, has_rgb_images, run_depth_to_linear, run_yuv_to_rgb
+        from mq3drecon.workflows import (
+            RgbImageStatus,
+            export_colmap_project,
+            get_rgb_image_status,
+            has_rgb_images,
+            run_depth_to_linear,
+            run_yuv_to_rgb,
+        )
 
         assert PipelineConfigs is not None
         assert ReconstructionConfig is not None

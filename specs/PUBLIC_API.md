@@ -56,19 +56,45 @@ Importing these modules must not require Open3D.
 
 ---
 
-# RGB Dataset Readiness Helpers
+# RGB Image Status Helpers
 
-The workflows public boundary exposes lightweight helpers for checking whether RGB images are already available in a legacy project layout:
+The workflow public API includes lightweight helpers for checking whether converted RGB images are available in a legacy project directory.
 
 ```python
-from mq3drecon.workflows import RgbImageStatus, get_rgb_image_status, has_rgb_images
+from mq3drecon.workflows import get_rgb_image_status, has_rgb_images
+
+status = get_rgb_image_status(project_dir)
+status.left_count
+status.right_count
+status.is_complete
+status.is_balanced
+
+has_rgb_images(project_dir)
 ```
 
-These helpers must inspect the documented legacy RGB directories without running YUV-to-RGB conversion, building datasets, or importing Open3D-backed reconstruction dependencies.
+These helpers must inspect converted `.png` images under the legacy RGB directories. They must not run YUV conversion, build color datasets, or require Open3D.
 
-`has_rgb_images(project_dir)` returns `True` only when both left and right RGB image directories contain at least one `.png` image.
+# Conversion Workflow Configuration
 
-`get_rgb_image_status(project_dir)` returns counts and resolved left/right RGB directories so callers can decide whether to call `run_yuv_to_rgb` explicitly.
+The public conversion workflows support lightweight typed configuration objects and internal defaults.
+
+```python
+from mq3drecon.config import Depth2LinearConfig, Yuv2RgbConfig
+from mq3drecon.workflows import run_depth_to_linear, run_yuv_to_rgb
+
+run_yuv_to_rgb(project_dir)
+run_yuv_to_rgb(project_dir, config=Yuv2RgbConfig())
+run_yuv_to_rgb(project_dir, config_yml_path=config_yml_path)
+
+run_depth_to_linear(project_dir)
+run_depth_to_linear(project_dir, config=Depth2LinearConfig())
+run_depth_to_linear(project_dir, config_yml_path=config_yml_path)
+```
+
+`Yuv2RgbConfig()` and `Depth2LinearConfig()` must be default-constructible.
+When both `config` and `config_yml_path` are passed to the same conversion workflow, the workflow must reject the ambiguous input with `ValueError`.
+
+CLI defaults are specified separately in `CLI_BEHAVIOR.md`; this section defines Python public API behavior.
 
 # Reconstruction Public Boundary
 
