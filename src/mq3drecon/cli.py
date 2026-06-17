@@ -39,8 +39,8 @@ def _add_project_and_config_arguments(parser: argparse.ArgumentParser) -> None:
         "--config",
         "-c",
         type=Path,
-        default=Path("config/pipeline_config.yml"),
-        help="Path to the YAML config file for the pipeline.",
+        default=None,
+        help="Optional path to the YAML config file for the pipeline. Uses built-in defaults when omitted.",
     )
 
 

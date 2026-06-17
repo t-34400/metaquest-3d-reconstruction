@@ -69,20 +69,23 @@ Legacy scripts under `scripts/` remain available as migration shims. New automat
 
 ## 🔧 Processing Pipeline
 
+All conversion and reconstruction workflows provide built-in defaults.
+
+Configuration files are optional and only required when overriding default processing parameters.
+
+
 ### Step 1: Convert Passthrough Images to RGB
 
 ```bash
 mq3drecon yuv-to-rgb \
-  --project-dir path/to/your/project \
-  --config config/pipeline_config.yml
+  --project-dir path/to/your/project
 ```
 
 Legacy equivalent:
 
 ```bash
 python scripts/convert_yuv_to_rgb.py \
-  --project_dir path/to/your/project \
-  --config config/pipeline_config.yml
+  --project_dir path/to/your/project
 ```
 
 This generates:
@@ -98,16 +101,14 @@ This generates:
 
 ```bash
 mq3drecon reconstruct \
-  --project-dir path/to/your/project \
-  --config config/pipeline_config.yml
+  --project-dir path/to/your/project
 ```
 
 Legacy equivalent:
 
 ```bash
 python scripts/reconstruct_scene.py \
-  --project_dir path/to/your/project \
-  --config config/pipeline_config.yml
+  --project_dir path/to/your/project
 ```
 
 This produces:
@@ -127,6 +128,8 @@ Depending on your YAML config (`reconstruction:` section), the following additio
 | `color_aligned_depth_rendering.only_use_optimized_dataset: true` | Only aligned for optimized color dataset                                 |
 
 ---
+
+Use `--config` only when overriding the default settings.
 
 ### Step 3: Export COLMAP Project (Optional)
 
@@ -162,16 +165,14 @@ python scripts/build_colmap_project.py \
 
 ```bash
 mq3drecon depth-to-linear \
-  --project-dir path/to/your/project \
-  --config config/pipeline_config.yml
+  --project-dir path/to/your/project
 ```
 
 Legacy equivalent:
 
 ```bash
 python scripts/convert_depth_to_linear_map.py \
-  --project_dir path/to/your/project \
-  --config config/pipeline_config.yml
+  --project_dir path/to/your/project
 ```
 
 This step is **standalone** and not required for other scripts.

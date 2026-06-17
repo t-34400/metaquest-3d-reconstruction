@@ -81,6 +81,8 @@ Package CLI commands should prefer hyphenated option names such as `--project-di
 
 Package CLI commands that operate on a legacy project directory must require `--project-dir` explicitly. Commands that write package-oriented or export artifacts must require an explicit output location unless a future specification defines a safe default.
 
+For pipeline-backed processing commands, `--config` is optional. When it is omitted, commands must use the corresponding lightweight configuration object defaults instead of resolving a repository-relative default YAML path.
+
 ---
 
 # Argument Compatibility
