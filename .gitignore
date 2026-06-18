@@ -1,3 +1,6 @@
+# Project-specific ignores
+.local/
+.vscode/
 data/
 
 

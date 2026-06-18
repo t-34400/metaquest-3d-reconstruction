@@ -195,6 +195,19 @@ python scripts/visualize_camera_trajectories.py \
 
 ---
 
+
+### Example End-to-End Command Script
+
+The repository includes a shell script that runs the package CLI against a capture directory and writes generated exports under a separate output root:
+
+```bash
+examples/run_mq3drecon_pipeline.sh \
+  path/to/your/project \
+  path/to/output/root
+```
+
+For MRUK captures without depth frames, the script skips YUV and depth conversion, then exports the color camera dataset to a COLMAP project. Set `RUN_RECONSTRUCT=1` to run Open3D reconstruction when usable depth inputs are available, and set `RUN_VISUALIZE=1` to open the camera trajectory viewer.
+
 ## 🛠️ Custom Data Processing
 
 You can write custom processing scripts using the public package APIs. Prefer imports from `mq3drecon.*`; do not import from `scripts.*` in downstream projects.

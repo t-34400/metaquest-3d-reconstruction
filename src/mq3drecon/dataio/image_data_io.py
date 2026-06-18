@@ -6,6 +6,8 @@ import pandas as pd
 from scipy.spatial.transform import Rotation as R
 from mq3drecon.config.project_path_config import ImagePathConfig
 from mq3drecon.dataio.helpers.pose_interpolator import PoseInterpolator
+from mq3drecon.dataio.mruk_image_data_io import MRUKImageDataIO
+from mq3drecon.dataio.session_info import CaptureBackend, load_session_info
 from mq3drecon.models.camera_characteristics import CameraCharacteristics
 from mq3drecon.models.camera_dataset import CameraDataset
 from mq3drecon.models.image_format_info import BaseTime, ImageFormatInfo, ImagePlaneInfo
@@ -49,6 +51,32 @@ class ImageDataIO:
             raise FileNotFoundError(f"Image file not found or cannot be read: {file_path}")
         return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
     
+
+
+
+    def load_color_image(self, dataset: CameraDataset, index: int) -> np.ndarray:
+        file_name = str(dataset.image_file_names[index])
+        width = int(dataset.widths[index])
+        height = int(dataset.heights[index])
+        file_path = self.image_path_config.project_dir / dataset.directory_relative_path / file_name
+
+        if file_path.suffix == ".png":
+            bgr = cv2.imread(str(file_path))
+            if bgr is None:
+                raise FileNotFoundError(f"Image file not found or cannot be read: {file_path}")
+            return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+
+        if file_path.suffix == ".rgba":
+            expected_size = width * height * 4
+            actual_size = file_path.stat().st_size
+            if actual_size != expected_size:
+                raise ValueError(
+                    f"Invalid RGBA file size for {file_path}: expected {expected_size} bytes, got {actual_size}"
+                )
+            return np.fromfile(file_path, dtype=np.uint8).reshape(height, width, 4)
+
+        raise ValueError(f"Unsupported color image format: {file_path}")
+
 
     def save_rgb(self, rgb: np.ndarray, side: Side, timestamp: int):
         bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
@@ -157,6 +185,10 @@ class ImageDataIO:
         return df
     
 
+    def get_capture_backend(self) -> CaptureBackend:
+        return load_session_info(self.image_path_config.project_dir).capture_backend
+
+
     def load_color_dataset(self, side: Side, use_cache: bool = True) -> CameraDataset:
         camera_dataset_path = self.image_path_config.get_color_dataset_path(side=side)
 
@@ -195,6 +227,13 @@ class ImageDataIO:
 
 
     def build_color_dataset(self, side: Side) -> CameraDataset:
+        if self.get_capture_backend() == CaptureBackend.MRUK:
+            return MRUKImageDataIO(self.image_path_config).build_color_dataset(side=side)
+
+        return self.build_legacy_color_dataset(side=side)
+
+
+    def build_legacy_color_dataset(self, side: Side) -> CameraDataset:
         interpolator = PoseInterpolator(
             pose_csv_path=self.image_path_config.get_hmd_pose_csv_path()
         )

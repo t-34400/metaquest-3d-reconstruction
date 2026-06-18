@@ -12,6 +12,11 @@ def test_legacy_project_layout_preserves_existing_paths(tmp_path):
     assert layout.image.get_rgb_file_path(Side.RIGHT, 123) == tmp_path / "right_camera_rgb" / "123.png"
     assert layout.image.get_camera_format_json_path(Side.LEFT) == tmp_path / "left_camera_image_format.json"
     assert layout.image.get_camera_format_format_json_path(Side.LEFT) == layout.image.get_camera_format_json_path(Side.LEFT)
+    assert layout.image.get_session_info_json_path() == tmp_path / "session_info.json"
+    assert layout.image.get_mruk_rgba_dir(Side.LEFT) == tmp_path / "left_camera_mruk_rgba"
+    assert layout.image.get_mruk_intrinsics_json_path(Side.RIGHT) == tmp_path / "right_camera_mruk_intrinsics.json"
+    assert layout.image.get_mruk_frame_metadata_csv_path(Side.LEFT) == tmp_path / "left_camera_mruk_frame_metadata.csv"
+    assert layout.image.get_mruk_stereo_pairs_csv_path() == tmp_path / "mruk_stereo_pairs.csv"
     assert layout.depth.get_depth_dataset_path(Side.RIGHT) == tmp_path / "dataset" / "right_depth_dataset.npz"
     assert layout.reconstruction.get_colored_pcd_path() == tmp_path / "reconstruction" / "color.ply"
 

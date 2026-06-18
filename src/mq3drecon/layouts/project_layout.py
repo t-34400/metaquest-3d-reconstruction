@@ -25,6 +25,24 @@ CAMERA_FORMAT_INFO_JSON_MAP = {
 }
 
 HMD_POSE_CSV_PATH = "hmd_poses.csv"
+SESSION_INFO_JSON_PATH = "session_info.json"
+
+MRUK_RGBA_DIR_MAP = {
+    Side.LEFT: "left_camera_mruk_rgba",
+    Side.RIGHT: "right_camera_mruk_rgba",
+}
+
+MRUK_INTRINSICS_JSON_MAP = {
+    Side.LEFT: "left_camera_mruk_intrinsics.json",
+    Side.RIGHT: "right_camera_mruk_intrinsics.json",
+}
+
+MRUK_FRAME_METADATA_CSV_MAP = {
+    Side.LEFT: "left_camera_mruk_frame_metadata.csv",
+    Side.RIGHT: "right_camera_mruk_frame_metadata.csv",
+}
+
+MRUK_STEREO_PAIRS_CSV_PATH = "mruk_stereo_pairs.csv"
 
 COLOR_DATASET_NPZ_MAP = {
     Side.LEFT: "dataset/left_camera_dataset.npz",
@@ -106,6 +124,24 @@ class ImagePathConfig:
 
     def get_hmd_pose_csv_path(self) -> Path:
         return self.project_dir / HMD_POSE_CSV_PATH
+
+    def get_session_info_json_path(self) -> Path:
+        return self.project_dir / SESSION_INFO_JSON_PATH
+
+    def get_mruk_rgba_dir(self, side: Side) -> Path:
+        return self.project_dir / MRUK_RGBA_DIR_MAP[side]
+
+    def get_mruk_rgba_paths(self, side: Side) -> list[Path]:
+        return sorted(self.get_mruk_rgba_dir(side).glob("*.rgba"))
+
+    def get_mruk_intrinsics_json_path(self, side: Side) -> Path:
+        return self.project_dir / MRUK_INTRINSICS_JSON_MAP[side]
+
+    def get_mruk_frame_metadata_csv_path(self, side: Side) -> Path:
+        return self.project_dir / MRUK_FRAME_METADATA_CSV_MAP[side]
+
+    def get_mruk_stereo_pairs_csv_path(self) -> Path:
+        return self.project_dir / MRUK_STEREO_PAIRS_CSV_PATH
 
     def get_color_dataset_path(self, side: Side) -> Path:
         return self.project_dir / COLOR_DATASET_NPZ_MAP[side]
