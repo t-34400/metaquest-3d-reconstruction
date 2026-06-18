@@ -50,6 +50,19 @@ Read when changing:
 
 Related tests: none currently identified.
 
+## `RECORDING_FORMATS.md`
+
+Navigation for capture backend detection and non-legacy recording formats.
+
+Read when changing:
+
+* capture backend detection
+* MRUK input layout handling
+* MRUK color frame, intrinsics, or metadata parsing
+* color reader dispatch between legacy Camera2 and MRUK
+
+Related tests: `tests/test_recording_format_detection.py`, `tests/test_mruk_color_dataset.py`.
+
 ## `DATASETS_AND_CACHE.md`
 
 Navigation for persistent dataset and cache schemas.

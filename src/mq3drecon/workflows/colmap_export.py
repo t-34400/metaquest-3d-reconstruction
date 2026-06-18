@@ -1,6 +1,6 @@
 from pathlib import Path
-import shutil
 
+import cv2
 import numpy as np
 from tqdm import tqdm
 
@@ -78,13 +78,14 @@ def read_colmap_cameras_and_images(
             timestamp = sampled_dataset.timestamps[i]
             dst_filename = f"{side.name}_{timestamp}.png"
 
-            src_path = data_io.path_config.image.get_rgb_file_path(side=side, timestamp=timestamp)
             dst_path = image_output_dir / dst_filename
-
-            try:
-                shutil.copy2(src=src_path, dst=dst_path)
-            except FileNotFoundError as exc:
-                raise FileNotFoundError(f"RGB image not found at path: {src_path}") from exc
+            color_image = data_io.color.load_color_image(sampled_dataset, i)
+            if color_image.shape[-1] == 4:
+                output_image = cv2.cvtColor(color_image, cv2.COLOR_RGBA2BGRA)
+            else:
+                output_image = cv2.cvtColor(color_image, cv2.COLOR_RGB2BGR)
+            if not cv2.imwrite(str(dst_path), output_image):
+                raise OSError(f"Failed to write COLMAP image: {dst_path}")
 
             image = Image(
                 id=image_id,
