@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from mq3drecon.config.reconstruction.color_aligned_depth import ColorAlignedDepthRenderingConfig
 from mq3drecon.config.reconstruction.color_optimization import ColorOptimizationConfig
@@ -14,6 +14,7 @@ from mq3drecon.config.reconstruction.parser import init_dataclass_from_dict
 @dataclass
 class ReconstructionConfig:
     device: DeviceSpec = DEFAULT_DEVICE
+    depth_source: Literal["quest", "color_aligned"] = "quest"
 
     # Step 0: Dataset generation
     use_dataset_cache: bool = True
@@ -56,8 +57,14 @@ class ReconstructionConfig:
         self.color_optimization = ColorOptimizationConfig(device=self.device)
         self.color_aligned_depth_rendering = ColorAlignedDepthRenderingConfig()
 
+        self._validate_depth_source()
+
         if self.use_dataset_cache:
             self._enable_dataset_cache_on_subconfigs()
+
+    def _validate_depth_source(self) -> None:
+        if self.depth_source not in ("quest", "color_aligned"):
+            raise ValueError("reconstruction.depth_source must be 'quest' or 'color_aligned'")
 
     def _enable_dataset_cache_on_subconfigs(self):
         for attr_name in vars(self):
@@ -69,6 +76,8 @@ class ReconstructionConfig:
     def parse(cls, config_dict: dict[str, Any]) -> "ReconstructionConfig":
         device = config_dict.get("device", DEFAULT_DEVICE)
         config = init_dataclass_from_dict(cls, config_dict, parent_device=device)
+
+        config._validate_depth_source()
 
         if config.use_dataset_cache:
             for attr_name in vars(config):

@@ -127,6 +127,35 @@ Depending on your YAML config (`reconstruction:` section), the following additio
 | `render_color_aligned_depth: true`           | Depth images aligned to RGB frames                                       |
 | `color_aligned_depth_rendering.only_use_optimized_dataset: true` | Only aligned for optimized color dataset                                 |
 
+
+### Reconstruct from FoundationStereo Color-Aligned Depth
+
+Generate `.npy` depth maps first, then select them as the reconstruction depth source.
+This path is useful for MRUK color captures that do not include Quest depth frames.
+
+```bash
+mq3drecon foundation-stereo-depth \
+  --project-dir path/to/your/project \
+  --model-path path/to/foundation_stereo.onnx
+```
+
+Then run reconstruction with a config containing:
+
+```yaml
+reconstruction:
+  depth_source: color_aligned
+  render_color_aligned_depth: true
+```
+
+When `depth_source: color_aligned` is selected, reconstruction reads:
+
+```text
+left_color_aligned_depth/*.npy
+right_color_aligned_depth/*.npy
+```
+
+Quest depth confidence estimation and Quest depth pose optimization are skipped for this depth source. The color-aligned depth rendering step is also skipped to avoid overwriting the selected input depth maps.
+
 ---
 
 Use `--config` only when overriding the default settings.

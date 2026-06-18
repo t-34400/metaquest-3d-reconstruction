@@ -5,6 +5,7 @@ from scipy.spatial.transform import Rotation as R
 from tqdm import tqdm
 
 from mq3drecon.dataio.depth_data_io import DepthDataIO
+from mq3drecon.dataio.rgbd_data_io import RGBDDataIO
 from mq3drecon.models.camera_dataset import CameraDataset, DepthDataset
 from mq3drecon.models.side import Side
 from mq3drecon.models.transforms import CoordinateSystem, Transforms
@@ -114,20 +115,31 @@ def load_depth_map(
     use_confidence_filtered_depth: bool,
     confidence_threshold: float,
     valid_count_threshold: int,
+    depth_source: str = "quest",
+    rgbd_data_io: RGBDDataIO | None = None,
 ) -> Optional[o3d.t.geometry.Image]:
-    depth_np = depth_data_io.load_depth_map(
-        side=side,
-        timestamp=dataset.timestamps[index],
-        width=dataset.widths[index],
-        height=dataset.heights[index],
-        near=dataset.nears[index],
-        far=dataset.fars[index],
-    )
+    if depth_source == "color_aligned":
+        if rgbd_data_io is None:
+            raise ValueError("rgbd_data_io is required when depth_source is color_aligned")
+        depth_np = rgbd_data_io.load_color_aligned_depth_by_index(
+            side=side,
+            dataset=dataset,
+            index=index,
+        )
+    else:
+        depth_np = depth_data_io.load_depth_map(
+            side=side,
+            timestamp=dataset.timestamps[index],
+            width=dataset.widths[index],
+            height=dataset.heights[index],
+            near=dataset.nears[index],
+            far=dataset.fars[index],
+        )
 
     if depth_np is None:
         return None
 
-    if use_confidence_filtered_depth:
+    if use_confidence_filtered_depth and depth_source != "color_aligned":
         confidence_map = depth_data_io.load_confidence_map(
             side=side,
             timestamp=dataset.timestamps[index]
@@ -164,6 +176,8 @@ def integrate(
     show_progress: bool = False,
     desc: Optional[str] = None,
     vbg_opt: Optional[o3d.t.geometry.VoxelBlockGrid] = None,
+    depth_source: str = "quest",
+    rgbd_data_io: RGBDDataIO | None = None,
 ) -> o3d.t.geometry.VoxelBlockGrid:
     if vbg_opt is None:
         vbg = o3d.t.geometry.VoxelBlockGrid(
@@ -193,6 +207,8 @@ def integrate(
             use_confidence_filtered_depth=use_confidence_filtered_depth,
             confidence_threshold=confidence_threshold,
             valid_count_threshold=valid_count_threshold,
+            depth_source=depth_source,
+            rgbd_data_io=rgbd_data_io,
         )
 
         if depth_map is None:

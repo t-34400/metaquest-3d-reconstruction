@@ -61,3 +61,17 @@ from mq3drecon.config.reconstruction_config import ReconstructionConfig
 During migration, `mq3drecon.config.reconstruction_config` may remain as an aggregation module that re-exports reconstruction configuration classes from focused implementation modules.
 
 This compatibility module must not become the long-term owner of unrelated configuration responsibilities.
+
+# Reconstruction Depth Source
+
+`ReconstructionConfig` supports selecting the depth input used for TSDF integration.
+
+Supported values are:
+
+| Value | Meaning |
+| --- | --- |
+| `quest` | Use legacy Quest raw depth descriptors and raw depth maps. This is the default compatibility behavior. |
+| `color_aligned` | Use saved `.npy` color-aligned depth maps matched to the color dataset timestamps. |
+
+The `color_aligned` source is intended for generated depth maps such as
+FoundationStereo output. It must not require raw Quest depth files.
