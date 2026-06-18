@@ -17,9 +17,11 @@ def test_default_dependencies_do_not_include_open3d():
 def test_optional_extras_define_reconstruction_and_full_profiles():
     optional_dependencies = load_pyproject()["project"]["optional-dependencies"]
 
-    assert {"io", "convert", "reconstruction", "full"}.issubset(optional_dependencies)
+    assert {"io", "convert", "reconstruction", "stereo", "full"}.issubset(optional_dependencies)
     assert "open3d==0.19.0" in optional_dependencies["reconstruction"]
     assert set(optional_dependencies["reconstruction"]).issubset(optional_dependencies["full"])
+    assert "onnxruntime" in optional_dependencies["stereo"]
+    assert set(optional_dependencies["stereo"]).issubset(optional_dependencies["full"])
 
 def test_full_profile_includes_all_feature_dependencies():
     optional_dependencies = load_pyproject()["project"]["optional-dependencies"]

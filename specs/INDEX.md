@@ -149,6 +149,20 @@ Read when changing:
 Related tests: none currently identified.
 
 
+## `STEREO_DEPTH.md`
+
+Navigation for stereo color-frame depth generation workflows.
+
+Read when changing:
+
+* FoundationStereo ONNX inference behavior
+* stereo color frame pairing
+* disparity-to-depth conversion
+* color-aligned depth output produced from stereo images
+* stereo optional dependency boundaries
+
+Related tests: `tests/test_foundation_stereo_workflow.py`, `tests/test_packaging_metadata.py`, `tests/test_public_api_imports.py`.
+
 ## `LOGGING_AND_ERRORS.md`
 
 Navigation for library error reporting, typed project exceptions, logging, and CLI error conversion.

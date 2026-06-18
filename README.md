@@ -438,3 +438,15 @@ See the [LICENSE](LICENSE) file for full text.
 
 * [ ] Implement carving to remove free-space artifacts
 * [ ] Add Nerfstudio export instructions
+
+
+## Installation
+
+```bash
+pip install mq3drecon
+pip install 'mq3drecon[full]'
+pip install 'mq3drecon[stereo]'
+```
+
+Use the `stereo` extra when running ONNX-backed FoundationStereo depth generation.
+

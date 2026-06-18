@@ -24,7 +24,7 @@ def test_package_cli_exposes_expected_subcommands_in_help():
     )
 
     assert result.returncode == 0, result.stderr
-    for command in ["yuv-to-rgb", "depth-to-linear", "reconstruct", "export-colmap", "visualize-cameras"]:
+    for command in ["yuv-to-rgb", "depth-to-linear", "foundation-stereo-depth", "reconstruct", "export-colmap", "visualize-cameras"]:
         assert command in result.stdout
 
 

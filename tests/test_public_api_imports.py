@@ -12,7 +12,7 @@ class BlockOpen3DFinder:
 def test_lightweight_public_imports_do_not_require_reconstruction_dependencies():
     importlib.import_module("mq3drecon")
 
-    from mq3drecon.config import Depth2LinearConfig, LegacyProjectLayout, ProjectPathConfig, Yuv2RgbConfig
+    from mq3drecon.config import Depth2LinearConfig, FoundationStereoConfig, LegacyProjectLayout, ProjectPathConfig, Yuv2RgbConfig
     from mq3drecon.dataio import DataIO, DepthDataIO, ImageDataIO, RGBDDataIO, ReconstructionDataIO
     from mq3drecon.layouts import ColmapExportLayout, PackageOutputLayout
     from mq3drecon.models import (
@@ -36,10 +36,12 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
         get_rgb_image_status,
         has_rgb_images,
         run_depth_to_linear,
+        run_foundation_stereo_depth,
         run_yuv_to_rgb,
     )
 
     assert Depth2LinearConfig is not None
+    assert FoundationStereoConfig is not None
     assert LegacyProjectLayout is not None
     assert ProjectPathConfig is not None
     assert Yuv2RgbConfig is not None
@@ -68,6 +70,7 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
     assert get_rgb_image_status is not None
     assert has_rgb_images is not None
     assert run_depth_to_linear is not None
+    assert run_foundation_stereo_depth is not None
     assert run_yuv_to_rgb is not None
 
 
