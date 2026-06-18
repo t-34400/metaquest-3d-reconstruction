@@ -129,6 +129,16 @@ empty depth directories. This must not prevent MRUK color dataset construction.
 
 ---
 
+
+# Format-Aware Color Image Consumers
+
+Processing code that consumes color frames through a `CameraDataset` must use the
+format-aware color image loader. It must not reconstruct legacy RGB PNG paths
+from timestamps when the dataset may reference MRUK `.rgba` frames.
+
+Consumers that require three-channel RGB images must explicitly drop the alpha
+channel from MRUK RGBA frames after loading the dataset-referenced source image.
+
 # MRUK COLMAP Export
 
 COLMAP export must consume color images through the format-aware color image

@@ -78,6 +78,13 @@ class ImageDataIO:
         raise ValueError(f"Unsupported color image format: {file_path}")
 
 
+    def load_color_rgb_image(self, dataset: CameraDataset, index: int) -> np.ndarray:
+        image = self.load_color_image(dataset=dataset, index=index)
+        if image.ndim != 3 or image.shape[2] not in (3, 4):
+            raise ValueError(f"Unsupported color image shape: {image.shape}")
+        return image[:, :, :3]
+
+
     def save_rgb(self, rgb: np.ndarray, side: Side, timestamp: int):
         bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
         self.save_bgr(bgr=bgr, side=side, timestamp=timestamp)

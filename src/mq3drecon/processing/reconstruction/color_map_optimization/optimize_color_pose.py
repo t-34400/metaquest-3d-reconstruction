@@ -45,9 +45,7 @@ def optimize_color_pose(
         depth_map_iter = raycast_in_color_view(scene=scene, dataset=color_dataset)
 
         for i in range(N):
-            timestamp = color_dataset.timestamps[i]
-
-            color_map = data_io.color.load_rgb(side=side, timestamp=timestamp)
+            color_map = data_io.color.load_color_rgb_image(dataset=color_dataset, index=i)
             depth_map = next(depth_map_iter)
 
             color_map_o3d = o3d.geometry.Image(color_map)

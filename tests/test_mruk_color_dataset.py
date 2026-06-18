@@ -66,9 +66,13 @@ def test_mruk_color_dataset_uses_metadata_pose_and_rgba_frames(tmp_path):
     np.testing.assert_allclose(dataset.transforms.positions, [[1.0, 2.0, 3.0]])
     np.testing.assert_allclose(dataset.transforms.rotations, [[0.0, 0.0, 0.0, 1.0]])
 
-    image = DataIO(tmp_path).color.load_color_image(dataset, 0)
+    color_io = DataIO(tmp_path).color
+    image = color_io.load_color_image(dataset, 0)
+    rgb_image = color_io.load_color_rgb_image(dataset, 0)
 
     assert image.shape == (2, 2, 4)
+    assert rgb_image.shape == (2, 2, 3)
+    np.testing.assert_array_equal(rgb_image, image[:, :, :3])
 
 
 def test_mruk_color_dataset_skips_invalid_frames(tmp_path):
