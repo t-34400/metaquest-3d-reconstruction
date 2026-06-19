@@ -20,10 +20,17 @@ class FoundationStereoConfig:
     max_depth_m: float | None = 20.0
     baseline_m: float | None = None
     max_pair_timestamp_delta_us: int | None = None
-    output_sides: tuple[Side, ...] = field(default_factory=lambda: (Side.LEFT, Side.RIGHT))
+    output_sides: tuple[Side, ...] = field(default_factory=lambda: (Side.LEFT,))
     save_rgba_png: bool = False
     save_depth_png: bool = False
     depth_png_scale: float = 1000.0
+    save_depth_preview_png: bool = False
+    depth_preview_min_m: float = 0.1
+    depth_preview_max_m: float | None = None
+
+    def __post_init__(self) -> None:
+        if tuple(self.output_sides) != (Side.LEFT,):
+            raise ValueError("FoundationStereo depth generation supports only left color-aligned depth output")
 
     @staticmethod
     def parse(config: dict[str, Any]) -> "FoundationStereoConfig":

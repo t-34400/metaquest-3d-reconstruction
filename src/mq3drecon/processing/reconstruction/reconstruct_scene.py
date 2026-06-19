@@ -58,7 +58,7 @@ def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
             print("[Info] Skipping Quest depth pose optimization for color_aligned depth source.")
 
         depth_dataset_map = {}
-        for side in Side:
+        for side in (Side.LEFT,):
             color_dataset = data_io.color.load_color_dataset(
                 side=side,
                 use_cache=config.use_dataset_cache

@@ -68,6 +68,9 @@ def _resolve_config(
             save_rgba_png=resolved.save_rgba_png,
             save_depth_png=resolved.save_depth_png,
             depth_png_scale=resolved.depth_png_scale,
+            save_depth_preview_png=resolved.save_depth_preview_png,
+            depth_preview_min_m=resolved.depth_preview_min_m,
+            depth_preview_max_m=resolved.depth_preview_max_m,
         )
     return resolved
 
@@ -117,23 +120,8 @@ def run_foundation_stereo_depth(
             )
             if resolved_config.save_depth_png:
                 _save_depth_png(data_io, Side.LEFT, left_timestamp, depth, resolved_config.depth_png_scale)
-
-        if Side.RIGHT in resolved_config.output_sides:
-            disparity = disparity_model.predict_disparity(right_image, left_image)
-            depth = _disparity_to_depth(
-                disparity=disparity,
-                fx=float(right_dataset.fx[pair.right_index]),
-                baseline_m=_resolve_baseline(left_dataset, right_dataset, pair, resolved_config),
-                config=resolved_config,
-            )
-            right_timestamp = int(right_dataset.timestamps[pair.right_index])
-            data_io.rgbd.save_color_aligned_depth(
-                depth_map=depth,
-                side=Side.RIGHT,
-                timestamp=right_timestamp,
-            )
-            if resolved_config.save_depth_png:
-                _save_depth_png(data_io, Side.RIGHT, right_timestamp, depth, resolved_config.depth_png_scale)
+            if resolved_config.save_depth_preview_png:
+                _save_depth_preview_png(data_io, Side.LEFT, left_timestamp, depth, resolved_config)
 
 
 def _resolve_stereo_pairs(
@@ -243,6 +231,35 @@ def _save_rgba_png(data_io: DataIO, side: Side, timestamp: int, image: np.ndarra
         output = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     cv2.imwrite(str(path), output)
 
+
+
+
+def _save_depth_preview_png(
+    data_io: DataIO,
+    side: Side,
+    timestamp: int,
+    depth: np.ndarray,
+    config: FoundationStereoConfig,
+) -> None:
+    min_m = float(config.depth_preview_min_m)
+    max_m = config.depth_preview_max_m if config.depth_preview_max_m is not None else config.max_depth_m
+    if max_m is None:
+        finite_positive = depth[np.isfinite(depth) & (depth > 0.0)]
+        if finite_positive.size == 0:
+            max_m = min_m + 1.0
+        else:
+            max_m = float(np.percentile(finite_positive, 99.0))
+    max_m = float(max_m)
+    if min_m < 0.0 or max_m <= min_m:
+        raise ValueError("depth preview range must satisfy 0 <= depth_preview_min_m < depth_preview_max_m")
+
+    path = data_io.path_config.rgbd.get_color_aligned_depth_preview_png_path(side=side, timestamp=timestamp)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    finite_positive = np.isfinite(depth) & (depth > 0.0)
+    normalized = np.zeros(depth.shape, dtype=np.float32)
+    normalized[finite_positive] = (depth[finite_positive] - min_m) / (max_m - min_m)
+    png = np.clip(np.rint(normalized * 255.0), 0, 255).astype(np.uint8)
+    cv2.imwrite(str(path), png)
 
 def _save_depth_png(data_io: DataIO, side: Side, timestamp: int, depth: np.ndarray, scale: float) -> None:
     if scale <= 0.0:

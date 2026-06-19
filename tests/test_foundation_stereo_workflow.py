@@ -105,7 +105,7 @@ def test_run_foundation_stereo_depth_writes_color_aligned_depth(tmp_path):
 
     run_foundation_stereo_depth(
         tmp_path,
-        config=FoundationStereoConfig(output_sides=(Side.LEFT,), max_depth_m=None),
+        config=FoundationStereoConfig(max_depth_m=None),
         disparity_model=model,
     )
 
@@ -126,21 +126,26 @@ def test_run_foundation_stereo_depth_can_write_debug_png_outputs(tmp_path):
     run_foundation_stereo_depth(
         tmp_path,
         config=FoundationStereoConfig(
-            output_sides=(Side.LEFT,),
             max_depth_m=None,
             save_rgba_png=True,
             save_depth_png=True,
+            save_depth_preview_png=True,
+            depth_preview_min_m=0.0,
+            depth_preview_max_m=4.0,
         ),
         disparity_model=model,
     )
 
     rgba_png = cv2.imread(str(tmp_path / "left_camera_mruk_rgba_png" / "1000.png"), cv2.IMREAD_UNCHANGED)
     depth_png = cv2.imread(str(tmp_path / "left_color_aligned_depth_png" / "1000.png"), cv2.IMREAD_UNCHANGED)
+    preview_png = cv2.imread(str(tmp_path / "left_color_aligned_depth_preview_png" / "1000.png"), cv2.IMREAD_UNCHANGED)
 
     assert rgba_png.shape == (4, 6, 4)
     assert rgba_png[0, 0].tolist() == [120, 110, 100, 130]
     assert depth_png.dtype == np.uint16
     assert np.all(depth_png == 2000)
+    assert preview_png.dtype == np.uint8
+    assert np.all(preview_png == 128)
 
 
 def test_run_foundation_stereo_depth_requires_model_path_without_injected_model(tmp_path):
@@ -150,3 +155,36 @@ def test_run_foundation_stereo_depth_requires_model_path_without_injected_model(
         assert "model_path is required" in str(exc)
     else:
         raise AssertionError("Expected missing model_path error")
+
+
+def test_run_foundation_stereo_depth_rejects_invalid_depth_preview_range(tmp_path):
+    _write_rgb(tmp_path / "left_camera_rgb" / "1000.png", 20)
+    _write_rgb(tmp_path / "right_camera_rgb" / "1002.png", 30)
+    _save_color_dataset(tmp_path, Side.LEFT, 1000, 0.0)
+    _save_color_dataset(tmp_path, Side.RIGHT, 1002, 0.2)
+    model = ConstantDisparityModel(disparity=10.0)
+
+    try:
+        run_foundation_stereo_depth(
+            tmp_path,
+            config=FoundationStereoConfig(
+                max_depth_m=None,
+                save_depth_preview_png=True,
+                depth_preview_min_m=5.0,
+                depth_preview_max_m=5.0,
+            ),
+            disparity_model=model,
+        )
+    except ValueError as exc:
+        assert "depth preview range" in str(exc)
+    else:
+        raise AssertionError("Expected invalid depth preview range error")
+
+
+def test_foundation_stereo_config_rejects_right_depth_output():
+    try:
+        FoundationStereoConfig(output_sides=(Side.LEFT, Side.RIGHT))
+    except ValueError as exc:
+        assert "only left" in str(exc)
+    else:
+        raise AssertionError("Expected right output side to be rejected")

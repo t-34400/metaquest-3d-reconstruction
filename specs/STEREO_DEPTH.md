@@ -28,7 +28,7 @@ from mq3drecon.config import FoundationStereoConfig
 from mq3drecon.workflows import run_foundation_stereo_depth
 ```
 
-The workflow consumes left and right color camera frames and writes color-aligned depth maps to the legacy color-aligned depth directories when operating through `LegacyProjectLayout`.
+The workflow consumes left and right color camera frames and writes left-view color-aligned depth maps to the legacy left color-aligned depth directory when operating through `LegacyProjectLayout`. It must not generate right-view color-aligned depth by swapping model inputs because that output is not part of the supported FoundationStereo workflow contract.
 
 ---
 
@@ -78,7 +78,7 @@ The workflow converts disparity to metric depth with:
 depth_m = fx_px * baseline_m / disparity_px
 ```
 
-`fx_px` must come from the color dataset for the output side. `baseline_m` may be supplied explicitly through configuration. When it is not supplied, the workflow may compute the baseline from paired camera positions in the loaded color datasets.
+`fx_px` must come from the left color dataset. `baseline_m` may be supplied explicitly through configuration. When it is not supplied, the workflow may compute the baseline from paired camera positions in the loaded color datasets.
 
 Disparity values less than or equal to `min_disparity` must not produce finite depth values.
 
@@ -88,24 +88,27 @@ When `max_depth_m` is configured, values greater than that depth must not produc
 
 # Output Artifacts
 
+The workflow supports only left-view color-aligned depth output. Configuration must reject requests to generate right-view FoundationStereo depth.
+
 The workflow writes `.npy` depth maps through `RGBDDataIO.save_color_aligned_depth`.
 
 When `FoundationStereoConfig.save_rgba_png` is enabled, the workflow also writes decoded color-frame PNG files for inspection. For MRUK `.rgba` inputs, these PNG files must reflect the same decoded and vertically oriented image array used by stereo inference.
 
 When `FoundationStereoConfig.save_depth_png` is enabled, the workflow also writes generated color-aligned depth as 16-bit PNG files using `depth_png_scale` units per meter. Invalid or non-positive depth values must be written as zero.
 
+When `FoundationStereoConfig.save_depth_preview_png` is enabled, the workflow also writes generated color-aligned depth as 8-bit preview PNG files for visual inspection. Preview values must be normalized linearly from `depth_preview_min_m` to `depth_preview_max_m` when a maximum is configured. If the preview maximum is not configured, the workflow may use a finite positive depth percentile or another deterministic fallback suitable for visualization. Invalid or non-positive depth values must be written as zero.
+
 Legacy output directories are:
 
 ```text
 left_color_aligned_depth/
-right_color_aligned_depth/
 left_camera_mruk_rgba_png/
 right_camera_mruk_rgba_png/
 left_color_aligned_depth_png/
-right_color_aligned_depth_png/
+left_color_aligned_depth_preview_png/
 ```
 
-The saved depth map timestamp must match the color frame timestamp for the side being written.
+The saved depth map timestamp must match the paired left color frame timestamp.
 
 ---
 

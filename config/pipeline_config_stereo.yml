@@ -9,10 +9,12 @@ foundation_stereo:
   max_depth_m: 10.0
   output_sides:
     - left
-    - right
-  save_rgba_png: true
-  save_depth_png: true
+  save_rgba_png: false
+  save_depth_png: false
   depth_png_scale: 1000.0
+  save_depth_preview_png: false
+  depth_preview_min_m: 0.1
+  depth_preview_max_m: 5.0
 
 yuv_to_rgb:
   blur_filter: false

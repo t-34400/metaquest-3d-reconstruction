@@ -99,6 +99,11 @@ COLOR_ALIGNED_DEPTH_PNG_DIR_MAP = {
     Side.RIGHT: "right_color_aligned_depth_png",
 }
 
+COLOR_ALIGNED_DEPTH_PREVIEW_PNG_DIR_MAP = {
+    Side.LEFT: "left_color_aligned_depth_preview_png",
+    Side.RIGHT: "right_color_aligned_depth_preview_png",
+}
+
 CACHE_DIR_PATH = "cache"
 FRAGMENT_DATASET_CACHE_DIR_PATH = f"{CACHE_DIR_PATH}/dataset"
 FRAGMENT_PCD_CACHE_DIR_PATH = f"{CACHE_DIR_PATH}/pcd"
@@ -225,6 +230,12 @@ class RGBDPathConfig:
 
     def get_color_aligned_depth_png_path(self, side: Side, timestamp: int) -> Path:
         return self.get_color_aligned_depth_png_dir(side=side) / f"{timestamp}.png"
+
+    def get_color_aligned_depth_preview_png_dir(self, side: Side) -> Path:
+        return self.project_dir / COLOR_ALIGNED_DEPTH_PREVIEW_PNG_DIR_MAP[side]
+
+    def get_color_aligned_depth_preview_png_path(self, side: Side, timestamp: int) -> Path:
+        return self.get_color_aligned_depth_preview_png_dir(side=side) / f"{timestamp}.png"
 
 
 class ReconstructionPathConfig:
