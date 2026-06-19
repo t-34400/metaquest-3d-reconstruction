@@ -93,3 +93,16 @@ For model setup and ONNX requirements, see:
 - [Usage](docs/USAGE.md)
 - [Pipelines](docs/PIPELINES.md)
 - [Models](docs/MODELS.md)
+
+--
+
+## 🧩 Third-Party Code
+
+This project includes components from [COLMAP](https://github.com/colmap/colmap), licensed under the 3-clause BSD License. See [`scripts/third_party/colmap/COPYING.txt`](./scripts/third_party/colmap/COPYING.txt) for details.
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License.
+See the [LICENSE](LICENSE) file for full text.
