@@ -104,3 +104,37 @@ def test_rgbd_builds_matching_color_and_depth_datasets_for_existing_maps(tmp_pat
     assert matched_color_dataset.image_file_names.tolist() == ["1000.png", "3000.png"]
     assert depth_dataset.timestamps.tolist() == [1000, 3000]
     assert depth_dataset.image_file_names.tolist() == ["1000.npy", "3000.npy"]
+
+
+def test_color_aligned_rgbd_loader_uses_float_color_for_float_depth(tmp_path):
+    import cv2
+    import pytest
+
+    o3d = pytest.importorskip("open3d")
+
+    from mq3drecon.processing.reconstruction.color_aligned_rgbd_integration import _load_rgbd_images
+
+    color_dataset = _save_color_dataset(tmp_path, Side.LEFT, [1000])
+    color_dir = tmp_path / "left_camera_rgb"
+    color_dir.mkdir()
+    rgb = np.zeros((4, 6, 3), dtype=np.uint8)
+    rgb[0, 0] = [255, 128, 0]
+    cv2.imwrite(str(color_dir / "1000.png"), cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR))
+
+    depth_dir = tmp_path / "left_color_aligned_depth"
+    depth_dir.mkdir()
+    np.save(depth_dir / "1000.npy", np.ones((4, 6), dtype=np.float32))
+
+    data_io = DataIO(tmp_path)
+    _, depth_dataset = data_io.rgbd.build_color_aligned_rgbd_datasets(Side.LEFT, color_dataset)
+    color_image, depth_image = _load_rgbd_images(
+        data_io=data_io,
+        color_dataset=color_dataset,
+        depth_dataset=depth_dataset,
+        index=0,
+        device=o3d.core.Device("CPU:0"),
+    )
+
+    assert color_image.as_tensor().dtype == o3d.core.Dtype.Float32
+    assert depth_image.as_tensor().dtype == o3d.core.Dtype.Float32
+    assert np.allclose(color_image.as_tensor().cpu().numpy()[0, 0], [1.0, 128.0 / 255.0, 0.0])

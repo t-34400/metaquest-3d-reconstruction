@@ -17,6 +17,10 @@ def _make_tensor_image(array: np.ndarray, dtype: o3d.core.Dtype, device: o3d.cor
     return o3d.t.geometry.Image(o3d.core.Tensor(np.ascontiguousarray(array), dtype=dtype, device=device))
 
 
+def _normalize_color_for_float_depth(color: np.ndarray) -> np.ndarray:
+    return color.astype(np.float32, copy=False) / 255.0
+
+
 def _load_rgbd_images(
     data_io: DataIO,
     color_dataset: CameraDataset,
@@ -36,8 +40,10 @@ def _load_rgbd_images(
             f"timestamp={depth_dataset.timestamps[index]}, expected={expected_shape}, got={color.shape}"
         )
 
+    color_float = _normalize_color_for_float_depth(color)
+
     return (
-        _make_tensor_image(color.astype(np.uint8, copy=False), o3d.core.Dtype.UInt8, device),
+        _make_tensor_image(color_float, o3d.core.Dtype.Float32, device),
         _make_tensor_image(depth.astype(np.float32, copy=False), o3d.core.Dtype.Float32, device),
     )
 
