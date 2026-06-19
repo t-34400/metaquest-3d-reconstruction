@@ -60,6 +60,12 @@ width * height * 4
 
 MRUK readers must validate the on-disk byte size before reshaping an RGBA frame.
 
+MRUK RGBA raw buffers are stored in bottom-up row order. MRUK color image
+loaders must vertically flip the reshaped frame so all downstream consumers see
+RGB/RGBA images in the same top-down image orientation as legacy Camera2 RGB
+PNG frames. This orientation normalization is MRUK-specific and must not be
+applied to legacy YUV or RGB PNG readers.
+
 ---
 
 # MRUK Intrinsics Schema

@@ -80,7 +80,8 @@ class MRUKImageDataIO:
                 f"Invalid MRUK RGBA file size for {path}: expected {expected_size} bytes, got {actual_size}"
             )
 
-        return np.fromfile(path, dtype=np.uint8).reshape(int(height), int(width), 4)
+        rgba = np.fromfile(path, dtype=np.uint8).reshape(int(height), int(width), 4)
+        return np.ascontiguousarray(np.flipud(rgba))
 
     def build_color_dataset(self, side: Side) -> CameraDataset:
         intrinsics = self.load_intrinsics(side)

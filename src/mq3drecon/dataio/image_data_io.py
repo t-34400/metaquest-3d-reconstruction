@@ -73,7 +73,8 @@ class ImageDataIO:
                 raise ValueError(
                     f"Invalid RGBA file size for {file_path}: expected {expected_size} bytes, got {actual_size}"
                 )
-            return np.fromfile(file_path, dtype=np.uint8).reshape(height, width, 4)
+            rgba = np.fromfile(file_path, dtype=np.uint8).reshape(height, width, 4)
+            return np.ascontiguousarray(np.flipud(rgba))
 
         raise ValueError(f"Unsupported color image format: {file_path}")
 
@@ -82,7 +83,7 @@ class ImageDataIO:
         image = self.load_color_image(dataset=dataset, index=index)
         if image.ndim != 3 or image.shape[2] not in (3, 4):
             raise ValueError(f"Unsupported color image shape: {image.shape}")
-        return image[:, :, :3]
+        return np.ascontiguousarray(image[:, :, :3])
 
 
     def save_rgb(self, rgb: np.ndarray, side: Side, timestamp: int):
