@@ -40,8 +40,9 @@ The following imports are part of the lightweight public boundary:
 
 ```python
 import mq3drecon
-from mq3drecon import MQ3DReconError, ProcessingError
-from mq3drecon.config import Depth2LinearConfig, PipelineConfigs, ProjectPathConfig, ReconstructionConfig, Yuv2RgbConfig
+from mq3drecon import Depth2LinearConfig, FoundationStereoConfig, MQ3DReconError, PipelineConfigs, ProcessingError, ProjectPathConfig, ReconstructionConfig, Yuv2RgbConfig
+from mq3drecon import run_depth_to_linear, run_foundation_stereo_depth, run_reconstruct_scene, run_yuv_to_rgb
+from mq3drecon.config import Depth2LinearConfig, FoundationStereoConfig, PipelineConfigs, ProjectPathConfig, ReconstructionConfig, Yuv2RgbConfig
 from mq3drecon.dataio import DataIO, DepthDataIO, ImageDataIO, RGBDDataIO, ReconstructionDataIO
 from mq3drecon.layouts import ColmapExportLayout, LegacyProjectLayout, PackageOutputLayout
 from mq3drecon.models import BaseTime, CameraCharacteristics, CameraDataset, ConfidenceMap, CoordinateSystem, DepthDataset, ImageFormatInfo, ImagePlaneInfo, Side, Transforms
@@ -49,7 +50,7 @@ from mq3drecon.pipeline import PipelineProcessor
 from mq3drecon.processing.depth_conversion import convert_depth_directory
 from mq3drecon.processing.visualization import get_camera_visualization_lines, visualize_camera_trajectories
 from mq3drecon.processing.yuv_conversion import convert_yuv_directory
-from mq3drecon.workflows import RgbImageStatus, export_colmap_project, get_rgb_image_status, has_rgb_images, run_depth_to_linear, run_yuv_to_rgb
+from mq3drecon.workflows import RgbImageStatus, export_colmap_project, get_rgb_image_status, has_rgb_images, run_depth_to_linear, run_foundation_stereo_depth, run_yuv_to_rgb
 ```
 
 Importing these modules must not require Open3D.
@@ -91,6 +92,17 @@ run_depth_to_linear(project_dir, config=Depth2LinearConfig())
 run_depth_to_linear(project_dir, config_yml_path=config_yml_path)
 ```
 
+Reconstruction workflows support direct typed reconstruction configuration:
+
+```python
+from mq3drecon.config import ReconstructionConfig
+from mq3drecon.workflows import run_reconstruct_scene
+
+run_reconstruct_scene(project_dir)
+run_reconstruct_scene(project_dir, config=ReconstructionConfig())
+run_reconstruct_scene(project_dir, config_yml_path=config_yml_path)
+```
+
 Pipeline-level configuration is also default-constructible for workflows that execute multiple processing stages:
 
 ```python
@@ -103,8 +115,8 @@ PipelineProcessor(project_dir)
 run_reconstruct_scene(project_dir)
 ```
 
-`Yuv2RgbConfig()`, `Depth2LinearConfig()`, `ReconstructionConfig()`, and `PipelineConfigs()` must be default-constructible.
-When both `config` and `config_yml_path` are passed to the same conversion workflow, the workflow must reject the ambiguous input with `ValueError`.
+`Yuv2RgbConfig()`, `Depth2LinearConfig()`, `FoundationStereoConfig()`, `ReconstructionConfig()`, and `PipelineConfigs()` must be default-constructible.
+When both `config` and `config_yml_path` are passed to the same conversion or reconstruction workflow, the workflow must reject the ambiguous input with `ValueError`.
 
 CLI defaults are specified separately in `CLI_BEHAVIOR.md`; this section defines Python public API behavior.
 

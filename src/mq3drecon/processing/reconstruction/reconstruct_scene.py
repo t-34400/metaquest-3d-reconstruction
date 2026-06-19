@@ -8,6 +8,7 @@ from mq3drecon.dataio.data_io import DataIO
 from mq3drecon.models.camera_dataset import CameraDataset, DepthDataset
 from mq3drecon.models.side import Side
 from mq3drecon.models.transforms import CoordinateSystem
+from mq3drecon.processing.reconstruction.color_aligned_rgbd_integration import reconstruct_color_aligned_rgbd_scene
 from mq3drecon.processing.reconstruction.color_map_optimization.optimize_color_pose import optimize_color_pose
 from mq3drecon.processing.reconstruction.confidence_estimation.estimate_depth_confidences import estimate_depth_confidences
 from mq3drecon.processing.reconstruction.depth_optimization.depth_pose_optimizer import DepthPoseOptimizer
@@ -16,34 +17,60 @@ from mq3drecon.processing.reconstruction.utils.o3d_utils import integrate, rayca
 
 
 def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
+    if config.depth_source == "color_aligned":
+        reconstruct_color_aligned_rgbd_scene(data_io=data_io, config=config)
+        return
+
     # Dataset generation
-    if not config.use_dataset_cache:
-        for side in Side:
-            data_io.depth.load_depth_dataset(side=side, use_cache=False)
-            data_io.color.load_color_dataset(side=side, use_cache=False)
+    if config.depth_source == "quest":
+        if not config.use_dataset_cache:
+            for side in Side:
+                data_io.depth.load_depth_dataset(side=side, use_cache=False)
+                data_io.color.load_color_dataset(side=side, use_cache=False)
 
-    # Depth confidence estimation
-    if config.estimate_depth_confidences:
-        log_step("Estimate depth confidences")
-        estimate_depth_confidences(
-            depth_data_io=data_io.depth,
-            config=config.confidence_estimation
-        )
+        # Depth confidence estimation
+        if config.estimate_depth_confidences:
+            log_step("Estimate depth confidences")
+            estimate_depth_confidences(
+                depth_data_io=data_io.depth,
+                config=config.confidence_estimation
+            )
 
-    # Depth pose optimization
-    if config.optimize_depth_pose:
-        optimizer = DepthPoseOptimizer(
-            depth_data_io=data_io.depth,
-            recon_data_io=data_io.reconstruction,
-            config=config
-        )
-        depth_dataset_map = optimizer()
-    else: 
-        depth_dataset_map: dict[Side, DepthDataset] = {}
-        for side in Side:
-            dataset = data_io.depth.load_depth_dataset(
+        # Depth pose optimization
+        if config.optimize_depth_pose:
+            optimizer = DepthPoseOptimizer(
+                depth_data_io=data_io.depth,
+                recon_data_io=data_io.reconstruction,
+                config=config
+            )
+            depth_dataset_map = optimizer()
+        else:
+            depth_dataset_map: dict[Side, DepthDataset] = {}
+            for side in Side:
+                dataset = data_io.depth.load_depth_dataset(
+                    side=side,
+                    use_cache=config.fragment_generation.use_dataset_cache
+                )
+                dataset.transforms = dataset.transforms.convert_coordinate_system(
+                    target_coordinate_system=CoordinateSystem.OPEN3D,
+                    is_camera=True
+                )
+                depth_dataset_map[side] = dataset
+    else:
+        if config.estimate_depth_confidences:
+            print("[Info] Skipping Quest depth confidence estimation for color_aligned depth source.")
+        if config.optimize_depth_pose:
+            print("[Info] Skipping Quest depth pose optimization for color_aligned depth source.")
+
+        depth_dataset_map = {}
+        for side in (Side.LEFT,):
+            color_dataset = data_io.color.load_color_dataset(
                 side=side,
-                use_cache=config.fragment_generation.use_dataset_cache
+                use_cache=config.use_dataset_cache
+            )
+            dataset = data_io.rgbd.build_color_aligned_depth_dataset(
+                side=side,
+                color_dataset=color_dataset,
             )
             dataset.transforms = dataset.transforms.convert_coordinate_system(
                 target_coordinate_system=CoordinateSystem.OPEN3D,
@@ -76,7 +103,9 @@ def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
                 device=to_open3d_device(integration_config.device),
                 show_progress=True,
                 desc=f"[{side.name}] Integrating depth maps ...",
-                vbg_opt=vbg
+                vbg_opt=vbg,
+                depth_source=config.depth_source,
+                rgbd_data_io=data_io.rgbd,
             )
 
     if vbg is None:
@@ -120,7 +149,9 @@ def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
             data_io.reconstruction.save_colored_pcd_legacy(pcd=pcd)
 
     # Color aligned depth rendering
-    if config.render_color_aligned_depth:
+    if config.depth_source == "color_aligned" and config.render_color_aligned_depth:
+        print("[Info] Skipping color-aligned depth rendering to avoid overwriting the selected depth source.")
+    elif config.render_color_aligned_depth:
         log_step("Render color-aligned depth")
 
         mesh = vbg.extract_triangle_mesh(

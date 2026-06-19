@@ -10,6 +10,7 @@ from pathlib import Path
 from mq3drecon.errors import MQ3DReconError
 from mq3drecon.workflows import (
     export_colmap_project,
+    run_foundation_stereo_depth,
     run_depth_to_linear,
     run_reconstruct_scene,
     run_visualize_camera_trajectories,
@@ -54,6 +55,15 @@ def _run_depth_to_linear(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_foundation_stereo_depth(args: argparse.Namespace) -> int:
+    run_foundation_stereo_depth(
+        project_dir=args.project_dir,
+        model_path=args.model_path,
+        config_yml_path=args.config,
+    )
+    return 0
+
+
 def _run_reconstruct(args: argparse.Namespace) -> int:
     run_reconstruct_scene(project_dir=args.project_dir, config_yml_path=args.config)
     return 0
@@ -86,6 +96,20 @@ def build_parser() -> argparse.ArgumentParser:
     depth_parser = subparsers.add_parser("depth-to-linear", help="Convert depth frames to linear depth maps.")
     _add_project_and_config_arguments(depth_parser)
     depth_parser.set_defaults(handler=_run_depth_to_linear)
+
+    stereo_parser = subparsers.add_parser(
+        "foundation-stereo-depth",
+        help="Generate color-aligned depth maps with a FoundationStereo ONNX model.",
+    )
+    _add_project_and_config_arguments(stereo_parser)
+    stereo_parser.add_argument(
+        "--model-path",
+        "--model_path",
+        type=Path,
+        default=None,
+        help="Path to the FoundationStereo ONNX model. Required unless supplied by config.",
+    )
+    stereo_parser.set_defaults(handler=_run_foundation_stereo_depth)
 
     reconstruct_parser = subparsers.add_parser("reconstruct", help="Run the reconstruction pipeline.")
     _add_project_and_config_arguments(reconstruct_parser)

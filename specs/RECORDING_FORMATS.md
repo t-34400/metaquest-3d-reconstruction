@@ -60,6 +60,12 @@ width * height * 4
 
 MRUK readers must validate the on-disk byte size before reshaping an RGBA frame.
 
+MRUK RGBA raw buffers are stored in bottom-up row order. MRUK color image
+loaders must vertically flip the reshaped frame so all downstream consumers see
+RGB/RGBA images in the same top-down image orientation as legacy Camera2 RGB
+PNG frames. This orientation normalization is MRUK-specific and must not be
+applied to legacy YUV or RGB PNG readers.
+
 ---
 
 # MRUK Intrinsics Schema
@@ -128,6 +134,16 @@ Recordings made with depth disabled may contain no depth files, or may contain
 empty depth directories. This must not prevent MRUK color dataset construction.
 
 ---
+
+
+# Format-Aware Color Image Consumers
+
+Processing code that consumes color frames through a `CameraDataset` must use the
+format-aware color image loader. It must not reconstruct legacy RGB PNG paths
+from timestamps when the dataset may reference MRUK `.rgba` frames.
+
+Consumers that require three-channel RGB images must explicitly drop the alpha
+channel from MRUK RGBA frames after loading the dataset-referenced source image.
 
 # MRUK COLMAP Export
 

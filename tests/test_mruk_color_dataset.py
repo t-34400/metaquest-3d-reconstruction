@@ -3,7 +3,7 @@ import json
 import numpy as np
 import pytest
 
-from mq3drecon.dataio import DataIO
+from mq3drecon.dataio import DataIO, MRUKImageDataIO
 from mq3drecon.models import CoordinateSystem, Side
 
 
@@ -16,10 +16,11 @@ def write_mruk_sample(project_dir, side: Side, *, valid: bool = True, bad_file_s
     file_name = f"{timestamp}.rgba"
     width = 2
     height = 2
-    rgba = np.arange(width * height * 4, dtype=np.uint8)
+    rgba = np.arange(width * height * 4, dtype=np.uint8).reshape(height, width, 4)
     if bad_file_size:
-        rgba = rgba[:-1]
-    rgba.tofile(rgba_dir / file_name)
+        rgba.reshape(-1)[:-1].tofile(rgba_dir / file_name)
+    else:
+        rgba.tofile(rgba_dir / file_name)
 
     (project_dir / f"{prefix}_camera_mruk_intrinsics.json").write_text(
         json.dumps({
@@ -66,9 +67,18 @@ def test_mruk_color_dataset_uses_metadata_pose_and_rgba_frames(tmp_path):
     np.testing.assert_allclose(dataset.transforms.positions, [[1.0, 2.0, 3.0]])
     np.testing.assert_allclose(dataset.transforms.rotations, [[0.0, 0.0, 0.0, 1.0]])
 
-    image = DataIO(tmp_path).color.load_color_image(dataset, 0)
+    color_io = DataIO(tmp_path).color
+    image = color_io.load_color_image(dataset, 0)
+    rgb_image = color_io.load_color_rgb_image(dataset, 0)
+
+    expected_rgba = np.flipud(np.arange(2 * 2 * 4, dtype=np.uint8).reshape(2, 2, 4))
 
     assert image.shape == (2, 2, 4)
+    assert image.flags.c_contiguous
+    assert rgb_image.shape == (2, 2, 3)
+    assert rgb_image.flags.c_contiguous
+    np.testing.assert_array_equal(image, expected_rgba)
+    np.testing.assert_array_equal(rgb_image, expected_rgba[:, :, :3])
 
 
 def test_mruk_color_dataset_skips_invalid_frames(tmp_path):
@@ -91,3 +101,17 @@ def test_mruk_color_dataset_rejects_bad_rgba_file_size(tmp_path):
 
     with pytest.raises(ValueError, match="Invalid MRUK RGBA file size"):
         DataIO(tmp_path).color.load_color_dataset(Side.LEFT, use_cache=False)
+
+
+def test_mruk_rgba_loader_normalizes_bottom_up_rows(tmp_path):
+    (tmp_path / "session_info.json").write_text(
+        json.dumps({"sessionFormatVersion": 2, "captureBackend": "MRUK"}),
+        encoding="utf-8",
+    )
+    write_mruk_sample(tmp_path, Side.LEFT)
+
+    image = MRUKImageDataIO(DataIO(tmp_path).path_config.image).load_rgba(Side.LEFT, "123456789.rgba", 2, 2)
+    expected = np.flipud(np.arange(2 * 2 * 4, dtype=np.uint8).reshape(2, 2, 4))
+
+    assert image.flags.c_contiguous
+    np.testing.assert_array_equal(image, expected)

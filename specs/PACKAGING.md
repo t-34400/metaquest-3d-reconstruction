@@ -44,9 +44,10 @@ The package should define extras with the following responsibilities:
 | `io` | Dependencies needed by public data I/O APIs. |
 | `convert` | Dependencies needed by color and depth conversion workflows. |
 | `reconstruction` | Dependencies needed by reconstruction workflows and Open3D-backed reconstruction data operations. |
+| `stereo` | Dependencies needed by ONNX-backed stereo depth generation workflows. |
 | `full` | All supported optional runtime dependencies for the complete toolkit. |
 
-`full` must include the dependencies required by `reconstruction`.
+`full` must include the dependencies required by `reconstruction` and `stereo`.
 
 When an extra name overlaps with dependencies already included by the default lightweight profile, the extra may be retained as an explicit stable installation target even if it adds no new dependencies.
 

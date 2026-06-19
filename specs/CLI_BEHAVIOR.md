@@ -73,6 +73,7 @@ The stable package subcommands are:
 | --- | --- |
 | `yuv-to-rgb` | Convert captured YUV frames to RGB images. |
 | `depth-to-linear` | Convert depth frames to linear depth maps. |
+| `foundation-stereo-depth` | Generate color-aligned depth maps from stereo color frames using a FoundationStereo ONNX model. |
 | `reconstruct` | Run the reconstruction pipeline. |
 | `export-colmap` | Export camera and image data to COLMAP-compatible output. |
 | `visualize-cameras` | Visualize camera trajectories. |
