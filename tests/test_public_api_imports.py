@@ -117,3 +117,29 @@ def test_public_migration_modules_use_explicit_exports():
     assert "__getattr__" not in dataio.__dict__
     assert "__getattr__" not in models.__dict__
     assert "__getattr__" not in pipeline.__dict__
+
+
+def test_top_level_namespace_reexports_workflow_and_config_apis():
+    from mq3drecon import (
+        Depth2LinearConfig,
+        FoundationStereoConfig,
+        PipelineConfigs,
+        ProjectPathConfig,
+        ReconstructionConfig,
+        Yuv2RgbConfig,
+        run_depth_to_linear,
+        run_foundation_stereo_depth,
+        run_reconstruct_scene,
+        run_yuv_to_rgb,
+    )
+
+    assert Depth2LinearConfig is not None
+    assert FoundationStereoConfig is not None
+    assert PipelineConfigs is not None
+    assert ProjectPathConfig is not None
+    assert ReconstructionConfig is not None
+    assert Yuv2RgbConfig is not None
+    assert run_depth_to_linear is not None
+    assert run_foundation_stereo_depth is not None
+    assert run_reconstruct_scene is not None
+    assert run_yuv_to_rgb is not None

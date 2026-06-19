@@ -305,6 +305,35 @@ import cv2
 bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
 ```
 
+### Run stereo depth and reconstruction from Python
+
+The main workflow APIs are available from the top-level package namespace after installation. Pass `model_path` to override the FoundationStereo ONNX model without editing YAML. Pass a typed `ReconstructionConfig` to reconstruct from generated color-aligned depth without a config file.
+
+```python
+from pathlib import Path
+
+from mq3drecon import (
+    ReconstructionConfig,
+    run_foundation_stereo_depth,
+    run_reconstruct_scene,
+)
+
+project_dir = Path("data/projects/test")
+model_path = Path(".local/models/foundationstereo.onnx")
+
+run_foundation_stereo_depth(
+    project_dir=project_dir,
+    model_path=model_path,
+)
+
+run_reconstruct_scene(
+    project_dir=project_dir,
+    config=ReconstructionConfig(depth_source="color_aligned"),
+)
+```
+
+Do not pass both `config` and `config_yml_path` to the same workflow call.
+
 ### Load camera calibration and capture format metadata
 
 ```python
