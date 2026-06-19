@@ -79,6 +79,24 @@ class RGBDDataIO:
             fars=np.full(len(indices), far_m, dtype=np.float32),
         )
 
+
+    def build_color_aligned_rgbd_datasets(
+        self,
+        side: Side,
+        color_dataset: CameraDataset,
+        near_m: float = 0.0,
+        far_m: float = np.inf,
+    ) -> tuple[CameraDataset, DepthDataset]:
+        depth_dataset = self.build_color_aligned_depth_dataset(
+            side=side,
+            color_dataset=color_dataset,
+            near_m=near_m,
+            far_m=far_m,
+        )
+        timestamp_to_color_index = {int(timestamp): index for index, timestamp in enumerate(color_dataset.timestamps)}
+        color_indices = [timestamp_to_color_index[int(timestamp)] for timestamp in depth_dataset.timestamps]
+        return color_dataset[np.asarray(color_indices, dtype=np.int64)], depth_dataset
+
     def save_color_aligned_depth(self, depth_map: np.ndarray, side: Side, timestamp: int):
         color_aligned_depth_path = self.rgbd_path_config.get_color_aligned_depth_path(side=side, timestamp=timestamp)
         color_aligned_depth_path.parent.mkdir(parents=True, exist_ok=True)

@@ -8,6 +8,7 @@ from mq3drecon.dataio.data_io import DataIO
 from mq3drecon.models.camera_dataset import CameraDataset, DepthDataset
 from mq3drecon.models.side import Side
 from mq3drecon.models.transforms import CoordinateSystem
+from mq3drecon.processing.reconstruction.color_aligned_rgbd_integration import reconstruct_color_aligned_rgbd_scene
 from mq3drecon.processing.reconstruction.color_map_optimization.optimize_color_pose import optimize_color_pose
 from mq3drecon.processing.reconstruction.confidence_estimation.estimate_depth_confidences import estimate_depth_confidences
 from mq3drecon.processing.reconstruction.depth_optimization.depth_pose_optimizer import DepthPoseOptimizer
@@ -16,6 +17,10 @@ from mq3drecon.processing.reconstruction.utils.o3d_utils import integrate, rayca
 
 
 def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
+    if config.depth_source == "color_aligned":
+        reconstruct_color_aligned_rgbd_scene(data_io=data_io, config=config)
+        return
+
     # Dataset generation
     if config.depth_source == "quest":
         if not config.use_dataset_cache:

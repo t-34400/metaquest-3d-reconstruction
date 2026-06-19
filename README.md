@@ -493,3 +493,8 @@ pip install 'mq3drecon[stereo]'
 
 Use the `stereo` extra when running ONNX-backed FoundationStereo depth generation.
 
+
+
+### Color-aligned RGBD reconstruction
+
+When `reconstruction.depth_source` is set to `color_aligned`, reconstruction integrates the generated LEFT RGB image and LEFT color-aligned depth map directly as Open3D RGBD TSDF input. This path does not use RIGHT color images or color map optimization for mesh coloring.

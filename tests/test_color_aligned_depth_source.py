@@ -85,3 +85,22 @@ def test_rgbd_color_aligned_depth_shape_mismatch_is_explicit(tmp_path):
         assert "shape" in str(exc)
     else:
         raise AssertionError("Expected shape mismatch error")
+
+
+def test_rgbd_builds_matching_color_and_depth_datasets_for_existing_maps(tmp_path):
+    color_dataset = _save_color_dataset(tmp_path, Side.LEFT, [1000, 2000, 3000])
+    depth_dir = tmp_path / "left_color_aligned_depth"
+    depth_dir.mkdir()
+    np.save(depth_dir / "1000.npy", np.ones((4, 6), dtype=np.float32))
+    np.save(depth_dir / "3000.npy", np.ones((4, 6), dtype=np.float32))
+
+    data_io = DataIO(tmp_path)
+    matched_color_dataset, depth_dataset = data_io.rgbd.build_color_aligned_rgbd_datasets(
+        Side.LEFT,
+        color_dataset,
+    )
+
+    assert matched_color_dataset.timestamps.tolist() == [1000, 3000]
+    assert matched_color_dataset.image_file_names.tolist() == ["1000.png", "3000.png"]
+    assert depth_dataset.timestamps.tolist() == [1000, 3000]
+    assert depth_dataset.image_file_names.tolist() == ["1000.npy", "3000.npy"]
