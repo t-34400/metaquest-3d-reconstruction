@@ -10,6 +10,9 @@ foundation_stereo:
   output_sides:
     - left
     - right
+  save_rgba_png: true
+  save_depth_png: true
+  depth_png_scale: 1000.0
 
 yuv_to_rgb:
   blur_filter: false
@@ -89,20 +92,20 @@ reconstruction:
     use_confidence_filtered_depth: false
     confidence_threshold: 0.0
     valid_count_threshold: 1
-    voxel_size: 0.02
+    voxel_size: 0.03
     block_resolution: 16
     block_count: 20000
-    depth_max: 5.0
-    trunc_voxel_multiplier: 4.0
+    depth_max: 10.0
+    trunc_voxel_multiplier: 8.0
 
   color_optimization:
-    weight_threshold: 3.0
+    weight_threshold: 1.0
     estimated_vertex_number: -1
     interval: 100
     max_iteration: 100
     use_dataset_cache: false
 
   color_aligned_depth_rendering:
-    weight_threshold: 3.0
+    weight_threshold: 1.0
     estimated_vertex_number: -1
     only_use_optimized_dataset: true

@@ -21,6 +21,9 @@ class FoundationStereoConfig:
     baseline_m: float | None = None
     max_pair_timestamp_delta_us: int | None = None
     output_sides: tuple[Side, ...] = field(default_factory=lambda: (Side.LEFT, Side.RIGHT))
+    save_rgba_png: bool = False
+    save_depth_png: bool = False
+    depth_png_scale: float = 1000.0
 
     @staticmethod
     def parse(config: dict[str, Any]) -> "FoundationStereoConfig":

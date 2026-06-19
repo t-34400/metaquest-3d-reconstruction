@@ -26,6 +26,36 @@ def _write_rgb(path: Path, value: int) -> None:
     assert cv2.imwrite(str(path), bgr)
 
 
+def _write_rgba(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rgba = np.zeros((4, 6, 4), dtype=np.uint8)
+    rgba[0, :, :] = np.array([10, 20, 30, 40], dtype=np.uint8)
+    rgba[-1, :, :] = np.array([100, 110, 120, 130], dtype=np.uint8)
+    rgba.tofile(path)
+
+
+def _save_rgba_color_dataset(project_dir: Path, side: Side, timestamp: int, x: float) -> None:
+    path = project_dir / "dataset" / ("left_camera_dataset.npz" if side == Side.LEFT else "right_camera_dataset.npz")
+    directory = "left_camera_mruk_rgba" if side == Side.LEFT else "right_camera_mruk_rgba"
+    dataset = CameraDataset(
+        directory_relative_path=directory,
+        image_file_names=np.asarray([f"{timestamp}.rgba"]),
+        timestamps=np.asarray([timestamp], dtype=np.int64),
+        fx=np.asarray([100.0], dtype=np.float32),
+        fy=np.asarray([100.0], dtype=np.float32),
+        cx=np.asarray([3.0], dtype=np.float32),
+        cy=np.asarray([2.0], dtype=np.float32),
+        transforms=Transforms(
+            coordinate_system=CoordinateSystem.UNITY,
+            positions=np.asarray([[x, 0.0, 0.0]], dtype=np.float32),
+            rotations=np.asarray([[0.0, 0.0, 0.0, 1.0]], dtype=np.float32),
+        ),
+        widths=np.asarray([6], dtype=np.int32),
+        heights=np.asarray([4], dtype=np.int32),
+    )
+    dataset.save(path)
+
+
 def _save_color_dataset(project_dir: Path, side: Side, timestamp: int, x: float) -> None:
     if side == Side.LEFT:
         path = project_dir / "dataset" / "left_camera_dataset.npz"
@@ -84,6 +114,33 @@ def test_run_foundation_stereo_depth_writes_color_aligned_depth(tmp_path):
     assert np.allclose(depth, 2.0)
     assert not (tmp_path / "right_color_aligned_depth" / "1002.npy").exists()
     assert model.calls == [((4, 6, 3), (4, 6, 3))]
+
+
+def test_run_foundation_stereo_depth_can_write_debug_png_outputs(tmp_path):
+    _write_rgba(tmp_path / "left_camera_mruk_rgba" / "1000.rgba")
+    _write_rgba(tmp_path / "right_camera_mruk_rgba" / "1002.rgba")
+    _save_rgba_color_dataset(tmp_path, Side.LEFT, 1000, 0.0)
+    _save_rgba_color_dataset(tmp_path, Side.RIGHT, 1002, 0.2)
+    model = ConstantDisparityModel(disparity=10.0)
+
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(
+            output_sides=(Side.LEFT,),
+            max_depth_m=None,
+            save_rgba_png=True,
+            save_depth_png=True,
+        ),
+        disparity_model=model,
+    )
+
+    rgba_png = cv2.imread(str(tmp_path / "left_camera_mruk_rgba_png" / "1000.png"), cv2.IMREAD_UNCHANGED)
+    depth_png = cv2.imread(str(tmp_path / "left_color_aligned_depth_png" / "1000.png"), cv2.IMREAD_UNCHANGED)
+
+    assert rgba_png.shape == (4, 6, 4)
+    assert rgba_png[0, 0].tolist() == [120, 110, 100, 130]
+    assert depth_png.dtype == np.uint16
+    assert np.all(depth_png == 2000)
 
 
 def test_run_foundation_stereo_depth_requires_model_path_without_injected_model(tmp_path):

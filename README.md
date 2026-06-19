@@ -132,6 +132,7 @@ Depending on your YAML config (`reconstruction:` section), the following additio
 
 Generate `.npy` depth maps first, then select them as the reconstruction depth source.
 This path is useful for MRUK color captures that do not include Quest depth frames.
+The stereo config can optionally write decoded RGBA PNGs and 16-bit depth PNGs for debugging.
 
 ```bash
 mq3drecon foundation-stereo-depth \
@@ -142,9 +143,20 @@ mq3drecon foundation-stereo-depth \
 Then run reconstruction with a config containing:
 
 ```yaml
+foundation_stereo:
+  save_rgba_png: true
+  save_depth_png: true
+  depth_png_scale: 1000.0  # meters to millimeters for 16-bit PNG output
+
 reconstruction:
   depth_source: color_aligned
-  render_color_aligned_depth: true
+  render_color_aligned_depth: false
+  depth_integration:
+    depth_max: 10.0
+    voxel_size: 0.03
+    trunc_voxel_multiplier: 8.0
+  color_optimization:
+    weight_threshold: 1.0
 ```
 
 When `depth_source: color_aligned` is selected, reconstruction reads:

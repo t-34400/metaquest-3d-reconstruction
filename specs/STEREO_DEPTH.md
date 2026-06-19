@@ -90,11 +90,19 @@ When `max_depth_m` is configured, values greater than that depth must not produc
 
 The workflow writes `.npy` depth maps through `RGBDDataIO.save_color_aligned_depth`.
 
+When `FoundationStereoConfig.save_rgba_png` is enabled, the workflow also writes decoded color-frame PNG files for inspection. For MRUK `.rgba` inputs, these PNG files must reflect the same decoded and vertically oriented image array used by stereo inference.
+
+When `FoundationStereoConfig.save_depth_png` is enabled, the workflow also writes generated color-aligned depth as 16-bit PNG files using `depth_png_scale` units per meter. Invalid or non-positive depth values must be written as zero.
+
 Legacy output directories are:
 
 ```text
 left_color_aligned_depth/
 right_color_aligned_depth/
+left_camera_mruk_rgba_png/
+right_camera_mruk_rgba_png/
+left_color_aligned_depth_png/
+right_color_aligned_depth_png/
 ```
 
 The saved depth map timestamp must match the color frame timestamp for the side being written.

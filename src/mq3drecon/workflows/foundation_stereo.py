@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+import cv2
 import numpy as np
 import pandas as pd
 import yaml
@@ -64,6 +65,9 @@ def _resolve_config(
             baseline_m=resolved.baseline_m,
             max_pair_timestamp_delta_us=resolved.max_pair_timestamp_delta_us,
             output_sides=resolved.output_sides,
+            save_rgba_png=resolved.save_rgba_png,
+            save_depth_png=resolved.save_depth_png,
+            depth_png_scale=resolved.depth_png_scale,
         )
     return resolved
 
@@ -93,6 +97,10 @@ def run_foundation_stereo_depth(
         left_image = data_io.color.load_color_image(left_dataset, pair.left_index)
         right_image = data_io.color.load_color_image(right_dataset, pair.right_index)
 
+        if resolved_config.save_rgba_png:
+            _save_rgba_png(data_io, Side.LEFT, int(left_dataset.timestamps[pair.left_index]), left_image)
+            _save_rgba_png(data_io, Side.RIGHT, int(right_dataset.timestamps[pair.right_index]), right_image)
+
         if Side.LEFT in resolved_config.output_sides:
             disparity = disparity_model.predict_disparity(left_image, right_image)
             depth = _disparity_to_depth(
@@ -101,11 +109,14 @@ def run_foundation_stereo_depth(
                 baseline_m=_resolve_baseline(left_dataset, right_dataset, pair, resolved_config),
                 config=resolved_config,
             )
+            left_timestamp = int(left_dataset.timestamps[pair.left_index])
             data_io.rgbd.save_color_aligned_depth(
                 depth_map=depth,
                 side=Side.LEFT,
-                timestamp=int(left_dataset.timestamps[pair.left_index]),
+                timestamp=left_timestamp,
             )
+            if resolved_config.save_depth_png:
+                _save_depth_png(data_io, Side.LEFT, left_timestamp, depth, resolved_config.depth_png_scale)
 
         if Side.RIGHT in resolved_config.output_sides:
             disparity = disparity_model.predict_disparity(right_image, left_image)
@@ -115,11 +126,14 @@ def run_foundation_stereo_depth(
                 baseline_m=_resolve_baseline(left_dataset, right_dataset, pair, resolved_config),
                 config=resolved_config,
             )
+            right_timestamp = int(right_dataset.timestamps[pair.right_index])
             data_io.rgbd.save_color_aligned_depth(
                 depth_map=depth,
                 side=Side.RIGHT,
-                timestamp=int(right_dataset.timestamps[pair.right_index]),
+                timestamp=right_timestamp,
             )
+            if resolved_config.save_depth_png:
+                _save_depth_png(data_io, Side.RIGHT, right_timestamp, depth, resolved_config.depth_png_scale)
 
 
 def _resolve_stereo_pairs(
@@ -216,3 +230,27 @@ def _disparity_to_depth(
     if config.max_depth_m is not None:
         depth = np.where(depth <= config.max_depth_m, depth, np.nan).astype(np.float32)
     return depth
+
+
+def _save_rgba_png(data_io: DataIO, side: Side, timestamp: int, image: np.ndarray) -> None:
+    path = data_io.path_config.image.get_mruk_rgba_png_path(side=side, timestamp=timestamp)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if image.ndim != 3 or image.shape[2] not in (3, 4):
+        raise ValueError(f"Unsupported RGBA debug image shape: {image.shape}")
+    if image.shape[2] == 4:
+        output = cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
+    else:
+        output = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    cv2.imwrite(str(path), output)
+
+
+def _save_depth_png(data_io: DataIO, side: Side, timestamp: int, depth: np.ndarray, scale: float) -> None:
+    if scale <= 0.0:
+        raise ValueError("depth_png_scale must be positive")
+    path = data_io.path_config.rgbd.get_color_aligned_depth_png_path(side=side, timestamp=timestamp)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    finite_positive = np.isfinite(depth) & (depth > 0.0)
+    scaled = np.zeros(depth.shape, dtype=np.float32)
+    scaled[finite_positive] = depth[finite_positive] * float(scale)
+    png = np.clip(np.rint(scaled), 0, np.iinfo(np.uint16).max).astype(np.uint16)
+    cv2.imwrite(str(path), png)

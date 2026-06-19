@@ -32,6 +32,11 @@ MRUK_RGBA_DIR_MAP = {
     Side.RIGHT: "right_camera_mruk_rgba",
 }
 
+MRUK_RGBA_PNG_DIR_MAP = {
+    Side.LEFT: "left_camera_mruk_rgba_png",
+    Side.RIGHT: "right_camera_mruk_rgba_png",
+}
+
 MRUK_INTRINSICS_JSON_MAP = {
     Side.LEFT: "left_camera_mruk_intrinsics.json",
     Side.RIGHT: "right_camera_mruk_intrinsics.json",
@@ -89,6 +94,11 @@ COLOR_ALIGNED_DEPTH_DIR_MAP = {
     Side.RIGHT: "right_color_aligned_depth",
 }
 
+COLOR_ALIGNED_DEPTH_PNG_DIR_MAP = {
+    Side.LEFT: "left_color_aligned_depth_png",
+    Side.RIGHT: "right_color_aligned_depth_png",
+}
+
 CACHE_DIR_PATH = "cache"
 FRAGMENT_DATASET_CACHE_DIR_PATH = f"{CACHE_DIR_PATH}/dataset"
 FRAGMENT_PCD_CACHE_DIR_PATH = f"{CACHE_DIR_PATH}/pcd"
@@ -133,6 +143,12 @@ class ImagePathConfig:
 
     def get_mruk_rgba_paths(self, side: Side) -> list[Path]:
         return sorted(self.get_mruk_rgba_dir(side).glob("*.rgba"))
+
+    def get_mruk_rgba_png_dir(self, side: Side) -> Path:
+        return self.project_dir / MRUK_RGBA_PNG_DIR_MAP[side]
+
+    def get_mruk_rgba_png_path(self, side: Side, timestamp: int) -> Path:
+        return self.get_mruk_rgba_png_dir(side=side) / f"{timestamp}.png"
 
     def get_mruk_intrinsics_json_path(self, side: Side) -> Path:
         return self.project_dir / MRUK_INTRINSICS_JSON_MAP[side]
@@ -203,6 +219,12 @@ class RGBDPathConfig:
 
     def get_color_aligned_depth_path(self, side: Side, timestamp: int) -> Path:
         return self.get_color_aligned_depth_dir(side=side) / self.get_color_aligned_depth_filename(timestamp=timestamp)
+
+    def get_color_aligned_depth_png_dir(self, side: Side) -> Path:
+        return self.project_dir / COLOR_ALIGNED_DEPTH_PNG_DIR_MAP[side]
+
+    def get_color_aligned_depth_png_path(self, side: Side, timestamp: int) -> Path:
+        return self.get_color_aligned_depth_png_dir(side=side) / f"{timestamp}.png"
 
 
 class ReconstructionPathConfig:
