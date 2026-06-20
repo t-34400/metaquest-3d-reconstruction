@@ -46,6 +46,16 @@ MRUK color recordings use the following paths relative to the project directory:
 
 MRUK frame filenames are timestamp stems with `.rgba` extension.
 
+MRUK RGBA-to-PNG conversion writes generated PNG images under:
+
+| Path | Description |
+| --- | --- |
+| `left_camera_mruk_rgba_png/` | Left generated PNG previews converted from MRUK RGBA frames. |
+| `right_camera_mruk_rgba_png/` | Right generated PNG previews converted from MRUK RGBA frames. |
+
+The source `.rgba` files must remain immutable. Generated PNG filenames must use
+the source timestamp stem and `.png` extension.
+
 ---
 
 # MRUK RGBA Frames

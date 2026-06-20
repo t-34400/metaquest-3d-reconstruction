@@ -29,6 +29,7 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
     )
     from mq3drecon.pipeline import PipelineProcessor
     from mq3drecon.processing.depth_conversion import convert_depth_directory
+    from mq3drecon.processing.rgba_conversion import convert_rgba_directory
     from mq3drecon.processing.yuv_conversion import convert_yuv_directory
     from mq3drecon.workflows import (
         RgbImageStatus,
@@ -37,6 +38,7 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
         has_rgb_images,
         run_depth_to_linear,
         run_foundation_stereo_depth,
+        run_rgba_to_png,
         run_yuv_to_rgb,
     )
 
@@ -64,6 +66,7 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
     assert Transforms is not None
     assert PipelineProcessor is not None
     assert convert_depth_directory is not None
+    assert convert_rgba_directory is not None
     assert convert_yuv_directory is not None
     assert RgbImageStatus is not None
     assert export_colmap_project is not None
@@ -71,6 +74,7 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
     assert has_rgb_images is not None
     assert run_depth_to_linear is not None
     assert run_foundation_stereo_depth is not None
+    assert run_rgba_to_png is not None
     assert run_yuv_to_rgb is not None
 
 
@@ -88,6 +92,7 @@ def test_lightweight_public_imports_work_when_open3d_is_unavailable():
             get_rgb_image_status,
             has_rgb_images,
             run_depth_to_linear,
+            run_rgba_to_png,
             run_yuv_to_rgb,
         )
 
@@ -101,6 +106,7 @@ def test_lightweight_public_imports_work_when_open3d_is_unavailable():
         assert get_rgb_image_status is not None
         assert has_rgb_images is not None
         assert run_depth_to_linear is not None
+        assert run_rgba_to_png is not None
         assert run_yuv_to_rgb is not None
         assert "open3d" not in sys.modules
     finally:
@@ -130,6 +136,7 @@ def test_top_level_namespace_reexports_workflow_and_config_apis():
         run_depth_to_linear,
         run_foundation_stereo_depth,
         run_reconstruct_scene,
+        run_rgba_to_png,
         run_yuv_to_rgb,
     )
 
@@ -142,4 +149,5 @@ def test_top_level_namespace_reexports_workflow_and_config_apis():
     assert run_depth_to_linear is not None
     assert run_foundation_stereo_depth is not None
     assert run_reconstruct_scene is not None
+    assert run_rgba_to_png is not None
     assert run_yuv_to_rgb is not None
