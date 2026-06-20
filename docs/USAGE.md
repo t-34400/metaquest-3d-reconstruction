@@ -175,9 +175,9 @@ run_rgba_to_png(project_dir)
 run_depth_to_linear(project_dir)
 ```
 
-### Check and generate legacy RGB frames on demand
+### Load RGB frames by timestamp
 
-Use this pattern for legacy Camera2 captures. It checks `left_camera_rgb/` and `right_camera_rgb/`, and generates them from YUV frames when needed.
+Use `load_rgb()` when you already have a color timestamp and want a three-channel RGB array. The loader uses the capture backend recorded in `session_info.json` when available. Legacy captures read generated RGB PNG files; MRUK captures read generated MRUK PNG files when present and otherwise fall back to the MRUK color dataset source frame.
 
 ```python
 from pathlib import Path
@@ -187,25 +187,24 @@ from mq3drecon.models import Side
 from mq3drecon.workflows import has_rgb_images, run_yuv_to_rgb
 
 project_dir = Path("data/projects/test")
-
-if not has_rgb_images(project_dir):
-    run_yuv_to_rgb(project_dir)
-
 data_io = DataIO(project_dir=project_dir)
 side = Side.LEFT
-color_dataset = data_io.color.load_color_dataset(side)
 
+if data_io.color.get_capture_backend().value == "NativeCamera2" and not has_rgb_images(project_dir):
+    run_yuv_to_rgb(project_dir)
+
+color_dataset = data_io.color.load_color_dataset(side)
 timestamp = int(color_dataset.timestamps[0])
 rgb = data_io.color.load_rgb(side, timestamp)
 
 print(rgb.shape)
 ```
 
-`load_rgb()` is a legacy RGB PNG reader. It resolves `left_camera_rgb/{timestamp}.png` or `right_camera_rgb/{timestamp}.png`; it does not read MRUK `.rgba` files or MRUK preview PNG directories.
+For MRUK captures, `run_rgba_to_png(project_dir)` remains optional. It is useful for inspection or external tools that need PNG files, but `load_rgb()` can read raw MRUK `.rgba` frames through the color dataset when PNG files have not been generated.
 
 ### Load color images across legacy and MRUK captures
 
-Use dataset-indexed color loading when code should work with both legacy Camera2 and MRUK captures. For MRUK, this reads `.rgba` frames directly and returns top-down RGB arrays.
+Use dataset-indexed color loading when code should process the dataset in order instead of looking up frames by timestamp. For MRUK, this reads `.rgba` frames directly and returns top-down RGB arrays.
 
 ```python
 from pathlib import Path

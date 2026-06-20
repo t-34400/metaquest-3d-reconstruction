@@ -45,13 +45,37 @@ class ImageDataIO:
     
 
     def load_rgb(self, side: Side, timestamp: int) -> np.ndarray:
-        file_path = self.image_path_config.get_rgb_file_path(side=side, timestamp=timestamp)
-        bgr = cv2.imread(str(file_path))
-        if bgr is None:
-            raise FileNotFoundError(f"Image file not found or cannot be read: {file_path}")
-        return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-    
+        if self.get_capture_backend() == CaptureBackend.MRUK:
+            return self._load_mruk_rgb(side=side, timestamp=timestamp)
 
+        file_path = self.image_path_config.get_rgb_file_path(side=side, timestamp=timestamp)
+        return self._load_png_rgb(file_path)
+
+
+    def _load_mruk_rgb(self, side: Side, timestamp: int) -> np.ndarray:
+        png_path = self.image_path_config.get_mruk_rgba_png_path(side=side, timestamp=timestamp)
+        if png_path.exists():
+            return self._load_png_rgb(png_path)
+
+        dataset = self.load_color_dataset(side=side)
+        matches = np.where(dataset.timestamps == int(timestamp))[0]
+        if len(matches) == 0:
+            raise FileNotFoundError(f"MRUK RGB image not found for {side.name} timestamp {timestamp}")
+
+        return self.load_color_rgb_image(dataset=dataset, index=int(matches[0]))
+
+
+    def _load_png_rgb(self, file_path) -> np.ndarray:
+        image = cv2.imread(str(file_path), cv2.IMREAD_UNCHANGED)
+        if image is None:
+            raise FileNotFoundError(f"Image file not found or cannot be read: {file_path}")
+        if image.ndim == 2:
+            return cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+        if image.shape[2] == 3:
+            return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        if image.shape[2] == 4:
+            return cv2.cvtColor(image, cv2.COLOR_BGRA2RGB)
+        raise ValueError(f"Unsupported PNG image shape for {file_path}: {image.shape}")
 
 
     def load_color_image(self, dataset: CameraDataset, index: int) -> np.ndarray:
