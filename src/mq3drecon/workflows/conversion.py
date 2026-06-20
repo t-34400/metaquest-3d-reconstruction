@@ -9,8 +9,10 @@ from mq3drecon.layouts import LegacyProjectLayout
 from mq3drecon.config.yuv_to_rgb_config import Yuv2RgbConfig
 from mq3drecon.dataio.depth_data_io import DepthDataIO
 from mq3drecon.dataio.image_data_io import ImageDataIO
+from mq3drecon.dataio.mruk_image_data_io import MRUKImageDataIO
 from mq3drecon.processing.depth_conversion import convert_depth_directory
 from mq3drecon.processing.yuv_conversion import convert_yuv_directory
+from mq3drecon.processing.rgba_conversion import convert_rgba_directory
 from mq3drecon.models import Side
 
 
@@ -86,6 +88,11 @@ def run_yuv_to_rgb(
     path_config = LegacyProjectLayout(project_dir=project_dir)
     resolved_config = _resolve_yuv_to_rgb_config(config=config, config_yml_path=config_yml_path)
     convert_yuv_directory(image_io=ImageDataIO(image_path_config=path_config.image), config=resolved_config)
+
+
+def run_rgba_to_png(project_dir: Path) -> None:
+    path_config = LegacyProjectLayout(project_dir=project_dir)
+    convert_rgba_directory(mruk_image_io=MRUKImageDataIO(image_path_config=path_config.image))
 
 
 def run_depth_to_linear(

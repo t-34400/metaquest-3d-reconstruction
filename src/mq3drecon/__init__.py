@@ -19,6 +19,7 @@ from mq3drecon.workflows import (
     run_depth_to_linear,
     run_foundation_stereo_depth,
     run_reconstruct_scene,
+    run_rgba_to_png,
     run_visualize_camera_trajectories,
     run_yuv_to_rgb,
 )
@@ -40,6 +41,7 @@ __all__ = [
     "run_depth_to_linear",
     "run_foundation_stereo_depth",
     "run_reconstruct_scene",
+    "run_rgba_to_png",
     "run_visualize_camera_trajectories",
     "run_yuv_to_rgb",
 ]

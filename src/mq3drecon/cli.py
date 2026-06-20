@@ -13,6 +13,7 @@ from mq3drecon.workflows import (
     run_foundation_stereo_depth,
     run_depth_to_linear,
     run_reconstruct_scene,
+    run_rgba_to_png,
     run_visualize_camera_trajectories,
     run_yuv_to_rgb,
 )
@@ -52,6 +53,11 @@ def _run_yuv_to_rgb(args: argparse.Namespace) -> int:
 
 def _run_depth_to_linear(args: argparse.Namespace) -> int:
     run_depth_to_linear(project_dir=args.project_dir, config_yml_path=args.config)
+    return 0
+
+
+def _run_rgba_to_png(args: argparse.Namespace) -> int:
+    run_rgba_to_png(project_dir=args.project_dir)
     return 0
 
 
@@ -96,6 +102,17 @@ def build_parser() -> argparse.ArgumentParser:
     depth_parser = subparsers.add_parser("depth-to-linear", help="Convert depth frames to linear depth maps.")
     _add_project_and_config_arguments(depth_parser)
     depth_parser.set_defaults(handler=_run_depth_to_linear)
+
+    rgba_parser = subparsers.add_parser("rgba-to-png", help="Convert MRUK RGBA frames to PNG images.")
+    rgba_parser.add_argument(
+        "--project-dir",
+        "--project_dir",
+        "-p",
+        type=_existing_project_dir,
+        required=True,
+        help="Path to the project directory containing MRUK RGBA data.",
+    )
+    rgba_parser.set_defaults(handler=_run_rgba_to_png)
 
     stereo_parser = subparsers.add_parser(
         "foundation-stereo-depth",
