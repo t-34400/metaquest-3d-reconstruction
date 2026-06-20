@@ -16,6 +16,7 @@ Show command-specific help:
 
 ```bash
 mq3drecon yuv-to-rgb --help
+mq3drecon rgba-to-png --help
 mq3drecon depth-to-linear --help
 mq3drecon foundation-stereo-depth --help
 mq3drecon reconstruct --help
@@ -52,6 +53,22 @@ This writes converted color frames into the legacy RGB directories:
 left_camera_rgb/
 right_camera_rgb/
 ```
+
+### Convert MRUK RGBA frames to PNG previews
+
+```bash
+mq3drecon rgba-to-png \
+  --project-dir path/to/project
+```
+
+This writes decoded MRUK color previews while leaving source `.rgba` files unchanged:
+
+```text
+left_camera_mruk_rgba_png/
+right_camera_mruk_rgba_png/
+```
+
+The MRUK color dataset reader can load `.rgba` frames directly. This conversion is mainly for inspection and custom tools that expect ordinary PNG files.
 
 ### Convert raw Quest depth to linear depth
 
@@ -149,15 +166,18 @@ Prefer imports from `mq3drecon.*` in downstream projects. Do not import from `sc
 ```python
 from pathlib import Path
 
-from mq3drecon.workflows import run_depth_to_linear, run_yuv_to_rgb
+from mq3drecon.workflows import run_depth_to_linear, run_rgba_to_png, run_yuv_to_rgb
 
 project_dir = Path("data/projects/test")
 
 run_yuv_to_rgb(project_dir)
+run_rgba_to_png(project_dir)
 run_depth_to_linear(project_dir)
 ```
 
-### Check and generate RGB frames on demand
+### Load RGB frames by timestamp
+
+Use `load_rgb()` when you already have a color timestamp and want a three-channel RGB array. The loader uses the capture backend recorded in `session_info.json` when available. Legacy captures read generated RGB PNG files; MRUK captures read generated MRUK PNG files when present and otherwise fall back to the MRUK color dataset source frame.
 
 ```python
 from pathlib import Path
@@ -167,21 +187,42 @@ from mq3drecon.models import Side
 from mq3drecon.workflows import has_rgb_images, run_yuv_to_rgb
 
 project_dir = Path("data/projects/test")
-
-if not has_rgb_images(project_dir):
-    run_yuv_to_rgb(project_dir)
-
 data_io = DataIO(project_dir=project_dir)
 side = Side.LEFT
-color_dataset = data_io.color.load_color_dataset(side)
 
+if data_io.color.get_capture_backend().value == "NativeCamera2" and not has_rgb_images(project_dir):
+    run_yuv_to_rgb(project_dir)
+
+color_dataset = data_io.color.load_color_dataset(side)
 timestamp = int(color_dataset.timestamps[0])
 rgb = data_io.color.load_rgb(side, timestamp)
 
 print(rgb.shape)
 ```
 
-`load_rgb()` returns an RGB `numpy.ndarray`. Convert it to BGR before passing it to OpenCV APIs that expect BGR images:
+For MRUK captures, `run_rgba_to_png(project_dir)` remains optional. It is useful for inspection or external tools that need PNG files, but `load_rgb()` can read raw MRUK `.rgba` frames through the color dataset when PNG files have not been generated.
+
+### Load color images across legacy and MRUK captures
+
+Use dataset-indexed color loading when code should process the dataset in order instead of looking up frames by timestamp. For MRUK, this reads `.rgba` frames directly and returns top-down RGB arrays.
+
+```python
+from pathlib import Path
+
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import Side
+
+project_dir = Path("data/projects/test")
+data_io = DataIO(project_dir=project_dir)
+side = Side.LEFT
+
+color_dataset = data_io.color.load_color_dataset(side)
+rgb = data_io.color.load_color_rgb_image(color_dataset, index=0)
+
+print(rgb.shape)
+```
+
+`load_color_rgb_image()` returns an RGB `numpy.ndarray`. Convert it to BGR before passing it to OpenCV APIs that expect BGR images:
 
 ```python
 import cv2
@@ -387,6 +428,7 @@ from mq3drecon.workflows import (
     run_depth_to_linear,
     run_foundation_stereo_depth,
     run_reconstruct_scene,
+    run_rgba_to_png,
     run_yuv_to_rgb,
 )
 ```

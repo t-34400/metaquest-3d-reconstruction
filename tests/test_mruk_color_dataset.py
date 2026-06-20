@@ -1,5 +1,6 @@
 import json
 
+import cv2
 import numpy as np
 import pytest
 
@@ -115,3 +116,46 @@ def test_mruk_rgba_loader_normalizes_bottom_up_rows(tmp_path):
 
     assert image.flags.c_contiguous
     np.testing.assert_array_equal(image, expected)
+
+
+def test_load_rgb_reads_mruk_raw_rgba_when_png_is_absent(tmp_path):
+    (tmp_path / "session_info.json").write_text(
+        json.dumps({"sessionFormatVersion": 2, "captureBackend": "MRUK"}),
+        encoding="utf-8",
+    )
+    write_mruk_sample(tmp_path, Side.LEFT)
+
+    rgb = DataIO(tmp_path).color.load_rgb(Side.LEFT, 123456789)
+    expected_rgba = np.flipud(np.arange(2 * 2 * 4, dtype=np.uint8).reshape(2, 2, 4))
+
+    assert rgb.shape == (2, 2, 3)
+    assert rgb.flags.c_contiguous
+    np.testing.assert_array_equal(rgb, expected_rgba[:, :, :3])
+
+
+def test_load_rgb_prefers_generated_mruk_png(tmp_path):
+    (tmp_path / "session_info.json").write_text(
+        json.dumps({"sessionFormatVersion": 2, "captureBackend": "MRUK"}),
+        encoding="utf-8",
+    )
+    write_mruk_sample(tmp_path, Side.LEFT)
+
+    png_dir = tmp_path / "left_camera_mruk_rgba_png"
+    png_dir.mkdir()
+    rgba = np.array([[[10, 20, 30, 40]]], dtype=np.uint8)
+    cv2.imwrite(str(png_dir / "123456789.png"), cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGRA))
+
+    rgb = DataIO(tmp_path).color.load_rgb(Side.LEFT, 123456789)
+
+    np.testing.assert_array_equal(rgb, rgba[:, :, :3])
+
+
+def test_load_rgb_reports_missing_mruk_timestamp(tmp_path):
+    (tmp_path / "session_info.json").write_text(
+        json.dumps({"sessionFormatVersion": 2, "captureBackend": "MRUK"}),
+        encoding="utf-8",
+    )
+    write_mruk_sample(tmp_path, Side.LEFT)
+
+    with pytest.raises(FileNotFoundError, match="MRUK RGB image not found"):
+        DataIO(tmp_path).color.load_rgb(Side.LEFT, 999)
