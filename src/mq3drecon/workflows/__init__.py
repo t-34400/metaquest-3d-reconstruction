@@ -1,5 +1,6 @@
 """High-level workflow APIs exposed by MQ3DRecon."""
 
+from mq3drecon.workflows.color_aligned_depth import run_color_aligned_depth_to_png
 from mq3drecon.workflows.colmap_export import export_colmap_project
 from mq3drecon.workflows.foundation_stereo import run_foundation_stereo_depth
 from mq3drecon.workflows.conversion import (
@@ -18,6 +19,7 @@ __all__ = [
     "export_colmap_project",
     "get_rgb_image_status",
     "has_rgb_images",
+    "run_color_aligned_depth_to_png",
     "run_depth_to_linear",
     "run_foundation_stereo_depth",
     "run_reconstruct_scene",

@@ -56,7 +56,14 @@ The workflow writes left-view color-aligned depth maps:
 left_color_aligned_depth/*.npy
 ```
 
-Optional config flags can also write decoded color PNGs, 16-bit metric depth PNGs, and 8-bit preview PNGs for inspection.
+Optional config flags can also write decoded color PNGs, 16-bit metric depth PNGs, and 8-bit preview PNGs for inspection. Saved `.npy` depth maps can also be exported later:
+
+```bash
+mq3drecon color-aligned-depth-to-png \
+  --project-dir path/to/project
+```
+
+By default this writes 8-bit visual previews under `left_color_aligned_depth_preview_png/`. Add `--metric` to also write 16-bit scaled metric PNG files under `left_color_aligned_depth_png/`.
 
 ### Reconstruct with default Quest depth settings
 
@@ -121,6 +128,9 @@ mq3drecon rgba-to-png \
 
 mq3drecon depth-to-linear \
   --project-dir path/to/project
+
+mq3drecon color-aligned-depth-to-png \
+  --project-dir path/to/project
 ```
 
 `yuv-to-rgb` writes legacy Camera2 RGB exports under:
@@ -138,6 +148,8 @@ right_camera_mruk_rgba_png/
 ```
 
 `depth-to-linear` writes linearized Quest native depth outputs from the raw depth frame layout.
+
+`color-aligned-depth-to-png` writes saved color-aligned `.npy` depth maps as 8-bit preview PNGs by default. Use `--metric` to also write 16-bit metric PNGs.
 
 ### Run the repository example script
 

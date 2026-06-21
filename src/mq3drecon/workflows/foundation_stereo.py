@@ -14,6 +14,10 @@ from mq3drecon.config.foundation_stereo_config import FoundationStereoConfig
 from mq3drecon.dataio.data_io import DataIO
 from mq3drecon.models.camera_dataset import CameraDataset
 from mq3drecon.models.side import Side
+from mq3drecon.processing.depth_conversion.color_aligned_depth_png import (
+    save_depth_preview_png,
+    save_metric_depth_png,
+)
 from mq3drecon.processing.stereo_depth.foundation_stereo_onnx import FoundationStereoOnnxModel
 
 
@@ -241,33 +245,17 @@ def _save_depth_preview_png(
     depth: np.ndarray,
     config: FoundationStereoConfig,
 ) -> None:
-    min_m = float(config.depth_preview_min_m)
-    max_m = config.depth_preview_max_m if config.depth_preview_max_m is not None else config.max_depth_m
-    if max_m is None:
-        finite_positive = depth[np.isfinite(depth) & (depth > 0.0)]
-        if finite_positive.size == 0:
-            max_m = min_m + 1.0
-        else:
-            max_m = float(np.percentile(finite_positive, 99.0))
-    max_m = float(max_m)
-    if min_m < 0.0 or max_m <= min_m:
-        raise ValueError("depth preview range must satisfy 0 <= depth_preview_min_m < depth_preview_max_m")
+    save_depth_preview_png(
+        depth=depth,
+        path=data_io.path_config.rgbd.get_color_aligned_depth_preview_png_path(side=side, timestamp=timestamp),
+        min_m=config.depth_preview_min_m,
+        max_m=config.depth_preview_max_m if config.depth_preview_max_m is not None else config.max_depth_m,
+    )
 
-    path = data_io.path_config.rgbd.get_color_aligned_depth_preview_png_path(side=side, timestamp=timestamp)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    finite_positive = np.isfinite(depth) & (depth > 0.0)
-    normalized = np.zeros(depth.shape, dtype=np.float32)
-    normalized[finite_positive] = (depth[finite_positive] - min_m) / (max_m - min_m)
-    png = np.clip(np.rint(normalized * 255.0), 0, 255).astype(np.uint8)
-    cv2.imwrite(str(path), png)
 
 def _save_depth_png(data_io: DataIO, side: Side, timestamp: int, depth: np.ndarray, scale: float) -> None:
-    if scale <= 0.0:
-        raise ValueError("depth_png_scale must be positive")
-    path = data_io.path_config.rgbd.get_color_aligned_depth_png_path(side=side, timestamp=timestamp)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    finite_positive = np.isfinite(depth) & (depth > 0.0)
-    scaled = np.zeros(depth.shape, dtype=np.float32)
-    scaled[finite_positive] = depth[finite_positive] * float(scale)
-    png = np.clip(np.rint(scaled), 0, np.iinfo(np.uint16).max).astype(np.uint16)
-    cv2.imwrite(str(path), png)
+    save_metric_depth_png(
+        depth=depth,
+        path=data_io.path_config.rgbd.get_color_aligned_depth_png_path(side=side, timestamp=timestamp),
+        scale=scale,
+    )

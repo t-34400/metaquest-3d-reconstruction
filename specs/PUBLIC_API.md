@@ -41,17 +41,17 @@ The following imports are part of the lightweight public boundary:
 ```python
 import mq3drecon
 from mq3drecon import Depth2LinearConfig, FoundationStereoConfig, MQ3DReconError, PipelineConfigs, ProcessingError, ProjectPathConfig, ReconstructionConfig, Yuv2RgbConfig
-from mq3drecon import run_depth_to_linear, run_foundation_stereo_depth, run_reconstruct_scene, run_rgba_to_png, run_yuv_to_rgb
+from mq3drecon import run_color_aligned_depth_to_png, run_depth_to_linear, run_foundation_stereo_depth, run_reconstruct_scene, run_rgba_to_png, run_yuv_to_rgb
 from mq3drecon.config import Depth2LinearConfig, FoundationStereoConfig, PipelineConfigs, ProjectPathConfig, ReconstructionConfig, Yuv2RgbConfig
 from mq3drecon.dataio import DataIO, DepthDataIO, ImageDataIO, RGBDDataIO, ReconstructionDataIO
 from mq3drecon.layouts import ColmapExportLayout, LegacyProjectLayout, PackageOutputLayout
 from mq3drecon.models import BaseTime, CameraCharacteristics, CameraDataset, ConfidenceMap, CoordinateSystem, DepthDataset, ImageFormatInfo, ImagePlaneInfo, Side, Transforms
 from mq3drecon.pipeline import PipelineProcessor
-from mq3drecon.processing.depth_conversion import convert_depth_directory
+from mq3drecon.processing.depth_conversion import convert_depth_directory, export_color_aligned_depth_pngs
 from mq3drecon.processing.visualization import get_camera_visualization_lines, visualize_camera_trajectories
 from mq3drecon.processing.rgba_conversion import convert_rgba_directory
 from mq3drecon.processing.yuv_conversion import convert_yuv_directory
-from mq3drecon.workflows import RgbImageStatus, export_colmap_project, get_rgb_image_status, has_rgb_images, run_depth_to_linear, run_foundation_stereo_depth, run_rgba_to_png, run_yuv_to_rgb
+from mq3drecon.workflows import RgbImageStatus, export_colmap_project, get_rgb_image_status, has_rgb_images, run_color_aligned_depth_to_png, run_depth_to_linear, run_foundation_stereo_depth, run_rgba_to_png, run_yuv_to_rgb
 ```
 
 Importing these modules must not require Open3D.
@@ -111,6 +111,8 @@ run_yuv_to_rgb(project_dir, config=Yuv2RgbConfig())
 run_yuv_to_rgb(project_dir, config_yml_path=config_yml_path)
 
 run_rgba_to_png(project_dir)
+
+run_color_aligned_depth_to_png(project_dir)
 
 run_depth_to_linear(project_dir)
 run_depth_to_linear(project_dir, config=Depth2LinearConfig())

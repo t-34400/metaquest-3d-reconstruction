@@ -8,8 +8,10 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from mq3drecon.errors import MQ3DReconError
+from mq3drecon.models.side import Side
 from mq3drecon.workflows import (
     export_colmap_project,
+    run_color_aligned_depth_to_png,
     run_foundation_stereo_depth,
     run_depth_to_linear,
     run_reconstruct_scene,
@@ -20,6 +22,13 @@ from mq3drecon.workflows import (
 
 _EXPECTED_ERRORS = (MQ3DReconError, FileNotFoundError, ValueError, OSError)
 
+
+
+def _parse_side(value: str) -> Side:
+    try:
+        return Side[str(value).upper()]
+    except KeyError as exc:
+        raise argparse.ArgumentTypeError("side must be one of: left, right") from exc
 
 def _existing_project_dir(value: str) -> Path:
     path = Path(value)
@@ -69,6 +78,23 @@ def _run_foundation_stereo_depth(args: argparse.Namespace) -> int:
     )
     return 0
 
+
+
+def _run_color_aligned_depth_to_png(args: argparse.Namespace) -> int:
+    result = run_color_aligned_depth_to_png(
+        project_dir=args.project_dir,
+        side=args.side,
+        write_metric_png=args.metric,
+        write_preview_png=not args.no_preview,
+        depth_png_scale=args.depth_png_scale,
+        depth_preview_min_m=args.depth_preview_min_m,
+        depth_preview_max_m=args.depth_preview_max_m,
+    )
+    print(
+        f"[Info] Exported {result.preview_png_count} preview PNG(s) "
+        f"and {result.metric_png_count} metric PNG(s) for {result.side.name}."
+    )
+    return 0
 
 def _run_reconstruct(args: argparse.Namespace) -> int:
     run_reconstruct_scene(project_dir=args.project_dir, config_yml_path=args.config)
@@ -127,6 +153,55 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to the FoundationStereo ONNX model. Required unless supplied by config.",
     )
     stereo_parser.set_defaults(handler=_run_foundation_stereo_depth)
+
+
+    color_aligned_depth_parser = subparsers.add_parser(
+        "color-aligned-depth-to-png",
+        help="Export saved color-aligned depth .npy maps to PNG files for inspection.",
+    )
+    color_aligned_depth_parser.add_argument(
+        "--project-dir",
+        "--project_dir",
+        "-p",
+        type=_existing_project_dir,
+        required=True,
+        help="Path to the project directory containing color-aligned depth maps.",
+    )
+    color_aligned_depth_parser.add_argument(
+        "--side",
+        type=_parse_side,
+        default=Side.LEFT,
+        help="Camera side to export. Defaults to left.",
+    )
+    color_aligned_depth_parser.add_argument(
+        "--metric",
+        action="store_true",
+        help="Also write 16-bit metric depth PNG files using --depth-png-scale units per meter.",
+    )
+    color_aligned_depth_parser.add_argument(
+        "--no-preview",
+        action="store_true",
+        help="Disable 8-bit visual preview PNG output.",
+    )
+    color_aligned_depth_parser.add_argument(
+        "--depth-png-scale",
+        type=float,
+        default=1000.0,
+        help="Scale factor for 16-bit metric PNG output. Defaults to millimeters.",
+    )
+    color_aligned_depth_parser.add_argument(
+        "--depth-preview-min-m",
+        type=float,
+        default=0.1,
+        help="Minimum depth in meters mapped to black for preview PNG output.",
+    )
+    color_aligned_depth_parser.add_argument(
+        "--depth-preview-max-m",
+        type=float,
+        default=None,
+        help="Maximum depth in meters mapped to white for preview PNG output. Defaults to a deterministic percentile.",
+    )
+    color_aligned_depth_parser.set_defaults(handler=_run_color_aligned_depth_to_png)
 
     reconstruct_parser = subparsers.add_parser("reconstruct", help="Run the reconstruction pipeline.")
     _add_project_and_config_arguments(reconstruct_parser)

@@ -75,6 +75,7 @@ The stable package subcommands are:
 | `depth-to-linear` | Convert depth frames to linear depth maps. |
 | `rgba-to-png` | Convert MRUK RGBA frames to PNG images. |
 | `foundation-stereo-depth` | Generate color-aligned depth maps from stereo color frames using a FoundationStereo ONNX model. |
+| `color-aligned-depth-to-png` | Export saved color-aligned depth maps to PNG files for inspection. |
 | `reconstruct` | Run the reconstruction pipeline. |
 | `export-colmap` | Export camera and image data to COLMAP-compatible output. |
 | `visualize-cameras` | Visualize camera trajectories. |
