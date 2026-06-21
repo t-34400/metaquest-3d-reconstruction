@@ -288,6 +288,29 @@ Open3D-backed reconstruction requires the `reconstruction` or `full` optional de
 
 ### Load camera calibration and capture format metadata
 
+Use `CameraDataset` for backend-aware per-frame camera intrinsics. This works for both legacy Camera2 captures and MRUK captures.
+
+```python
+from pathlib import Path
+
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import Side
+
+project_dir = Path("data/projects/test")
+data_io = DataIO(project_dir=project_dir)
+side = Side.LEFT
+
+color_dataset = data_io.color.load_color_dataset(side)
+K = color_dataset.get_intrinsic_matrices()[0]
+
+print(K)
+print(color_dataset.widths[0], color_dataset.heights[0])
+print(color_dataset.fx[0], color_dataset.fy[0])
+print(color_dataset.cx[0], color_dataset.cy[0])
+```
+
+Legacy Camera2 captures also expose Camera2-specific metadata through `load_camera_characteristics()` and `load_image_format_info()`. These APIs read `left/right_camera_characteristics.json` and `left/right_camera_image_format.json`, so they are not MRUK-generic APIs.
+
 ```python
 from pathlib import Path
 
@@ -313,8 +336,6 @@ print(format_info.base_time.unix_time_ns)
 for plane in format_info.planes:
     print(plane.buffer_size, plane.row_stride, plane.pixel_stride)
 ```
-
-Use `CameraDataset.get_intrinsic_matrices()` when you only need per-frame intrinsic matrices. Use `load_camera_characteristics()` when you also need the camera-local offset stored in QRC metadata.
 
 ### Use OpenCV/COLMAP-compatible camera poses
 
@@ -356,7 +377,7 @@ Useful dataset fields:
 | Field | Meaning |
 | --- | --- |
 | `timestamps` | Frame timestamps. |
-| `image_file_names` | RGB file names. |
+| `image_file_names` | Backend-native color frame file names, such as generated PNG files or MRUK `.rgba` files. |
 | `fx`, `fy`, `cx`, `cy` | Per-frame intrinsics. |
 | `widths`, `heights` | Per-frame image sizes. |
 | `transforms.positions_wc` | Camera centers in world coordinates. |
