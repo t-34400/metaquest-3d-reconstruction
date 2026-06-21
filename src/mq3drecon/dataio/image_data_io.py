@@ -13,6 +13,7 @@ from mq3drecon.models.camera_dataset import CameraDataset
 from mq3drecon.models.image_format_info import BaseTime, ImageFormatInfo, ImagePlaneInfo
 from mq3drecon.models.side import Side
 from mq3drecon.models.transforms import CoordinateSystem, Transforms
+from mq3drecon.utils.image_utils import convert_yuv420_888_to_bgr
 
 
 class ImageDataIO:
@@ -30,12 +31,14 @@ class ImageDataIO:
 
     
     def get_rgb_timestamps(self, side: Side) -> list[int]:
-        rgb_files = self.image_path_config.get_rgb_image_paths(side=side)
-        return [
-            int(rgb_file.stem)
-            for rgb_file
-            in rgb_files
-        ]
+        if self.get_capture_backend() == CaptureBackend.MRUK:
+            timestamps = {int(path.stem) for path in self.image_path_config.get_mruk_rgba_paths(side=side)}
+            timestamps.update(int(path.stem) for path in self.image_path_config.get_mruk_rgba_png_paths(side=side))
+            return sorted(timestamps)
+
+        timestamps = {int(path.stem) for path in self.image_path_config.get_rgb_image_paths(side=side)}
+        timestamps.update(int(path.stem) for path in self.image_path_config.get_yuv_image_paths(side=side))
+        return sorted(timestamps)
 
     
     def load_yuv(self, side: Side, timestamp: int) -> np.ndarray:
@@ -48,21 +51,37 @@ class ImageDataIO:
         if self.get_capture_backend() == CaptureBackend.MRUK:
             return self._load_mruk_rgb(side=side, timestamp=timestamp)
 
-        file_path = self.image_path_config.get_rgb_file_path(side=side, timestamp=timestamp)
-        return self._load_png_rgb(file_path)
+        return self._load_legacy_rgb(side=side, timestamp=timestamp)
+
+
+    def _load_legacy_rgb(self, side: Side, timestamp: int) -> np.ndarray:
+        png_path = self.image_path_config.get_rgb_file_path(side=side, timestamp=timestamp)
+        if png_path.exists():
+            return self._load_png_rgb(png_path)
+
+        yuv_path = self.image_path_config.get_yuv_file_path(side=side, timestamp=timestamp)
+        if yuv_path.exists():
+            raw_data = self.load_yuv(side=side, timestamp=timestamp)
+            format_info = self.load_image_format_info(side=side)
+            bgr = convert_yuv420_888_to_bgr(raw_data=raw_data, format_info=format_info)
+            return np.ascontiguousarray(cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB))
+
+        raise FileNotFoundError(f"Legacy RGB image not found for {side.name} timestamp {timestamp}")
 
 
     def _load_mruk_rgb(self, side: Side, timestamp: int) -> np.ndarray:
+        raw_path = self.image_path_config.get_mruk_rgba_dir(side=side) / f"{timestamp}.rgba"
+        if raw_path.exists():
+            dataset = self.load_color_dataset(side=side)
+            matches = np.where(dataset.timestamps == int(timestamp))[0]
+            if len(matches) > 0:
+                return self.load_color_rgb_image(dataset=dataset, index=int(matches[0]))
+
         png_path = self.image_path_config.get_mruk_rgba_png_path(side=side, timestamp=timestamp)
         if png_path.exists():
             return self._load_png_rgb(png_path)
 
-        dataset = self.load_color_dataset(side=side)
-        matches = np.where(dataset.timestamps == int(timestamp))[0]
-        if len(matches) == 0:
-            raise FileNotFoundError(f"MRUK RGB image not found for {side.name} timestamp {timestamp}")
-
-        return self.load_color_rgb_image(dataset=dataset, index=int(matches[0]))
+        raise FileNotFoundError(f"MRUK RGB image not found for {side.name} timestamp {timestamp}")
 
 
     def _load_png_rgb(self, file_path) -> np.ndarray:

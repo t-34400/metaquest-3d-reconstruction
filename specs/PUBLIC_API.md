@@ -60,7 +60,8 @@ Importing these modules must not require Open3D.
 
 # RGB Image Status Helpers
 
-The workflow public API includes lightweight helpers for checking whether converted RGB images are available in a legacy project directory.
+The workflow public API includes lightweight helpers for checking whether
+three-channel RGB frames are loadable for both sides of a project directory.
 
 ```python
 from mq3drecon.workflows import get_rgb_image_status, has_rgb_images
@@ -74,7 +75,28 @@ status.is_balanced
 has_rgb_images(project_dir)
 ```
 
-These helpers must inspect converted `.png` images under the legacy RGB directories. They must not run YUV conversion, build color datasets, or require Open3D.
+These helpers must inspect loadable color-frame timestamps without running
+conversion workflows or requiring Open3D. For legacy Camera2 recordings, raw
+YUV timestamps and generated RGB PNG timestamps are both loadable. For MRUK
+recordings, raw RGBA timestamps and generated RGBA PNG timestamps are both
+loadable.
+
+
+# Format-Aware RGB Loading
+
+`ImageDataIO.load_rgb(side, timestamp)` is the public color-frame reader for
+callers that need a three-channel RGB array for a specific timestamp. It must
+hide whether the underlying capture frame is stored as a generated PNG or as a
+backend-native raw frame.
+
+Legacy Camera2 recordings must read `left/right_camera_rgb/*.png` when present
+and otherwise decode `left/right_camera_raw/*.yuv`. MRUK recordings must prefer
+raw `left/right_camera_mruk_rgba/*.rgba` frames and otherwise read generated
+`left/right_camera_mruk_rgba_png/*.png` exports.
+
+The explicit conversion workflows `run_yuv_to_rgb()` and `run_rgba_to_png()`
+remain available for batch PNG export, cache generation, inspection, and tools
+that require PNG files. They are not required before calling `load_rgb()`.
 
 # Conversion Workflow Configuration
 

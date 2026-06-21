@@ -163,6 +163,10 @@ Prefer imports from `mq3drecon.*` in downstream projects. Do not import from `sc
 
 ### Run conversion workflows
 
+The color conversion workflows are batch export helpers. They are useful for
+inspection, cache generation, and external tools that need PNG files. They are
+not required before calling `load_rgb()`.
+
 ```python
 from pathlib import Path
 
@@ -170,28 +174,24 @@ from mq3drecon.workflows import run_depth_to_linear, run_rgba_to_png, run_yuv_to
 
 project_dir = Path("data/projects/test")
 
-run_yuv_to_rgb(project_dir)
-run_rgba_to_png(project_dir)
+run_yuv_to_rgb(project_dir)   # Legacy Camera2 YUV -> RGB PNG export
+run_rgba_to_png(project_dir)  # MRUK RGBA -> PNG export
 run_depth_to_linear(project_dir)
 ```
 
 ### Load RGB frames by timestamp
 
-Use `load_rgb()` when you already have a color timestamp and want a three-channel RGB array. The loader uses the capture backend recorded in `session_info.json` when available. Legacy captures read generated RGB PNG files; MRUK captures read generated MRUK PNG files when present and otherwise fall back to the MRUK color dataset source frame.
+Use `load_rgb()` when you already have a color timestamp and want a three-channel RGB array. The loader uses the capture backend recorded in `session_info.json` when available and hides whether the frame has been exported to PNG. Legacy captures read generated RGB PNG files when present and otherwise decode raw YUV frames. MRUK captures prefer raw `.rgba` frames and fall back to generated MRUK PNG files when only the exported PNG exists.
 
 ```python
 from pathlib import Path
 
 from mq3drecon.dataio import DataIO
 from mq3drecon.models import Side
-from mq3drecon.workflows import has_rgb_images, run_yuv_to_rgb
 
 project_dir = Path("data/projects/test")
 data_io = DataIO(project_dir=project_dir)
 side = Side.LEFT
-
-if data_io.color.get_capture_backend().value == "NativeCamera2" and not has_rgb_images(project_dir):
-    run_yuv_to_rgb(project_dir)
 
 color_dataset = data_io.color.load_color_dataset(side)
 timestamp = int(color_dataset.timestamps[0])
@@ -200,7 +200,7 @@ rgb = data_io.color.load_rgb(side, timestamp)
 print(rgb.shape)
 ```
 
-For MRUK captures, `run_rgba_to_png(project_dir)` remains optional. It is useful for inspection or external tools that need PNG files, but `load_rgb()` can read raw MRUK `.rgba` frames through the color dataset when PNG files have not been generated.
+`run_yuv_to_rgb(project_dir)` and `run_rgba_to_png(project_dir)` remain optional batch exports for inspection or external tools that need PNG files.
 
 ### Load color images across legacy and MRUK captures
 
