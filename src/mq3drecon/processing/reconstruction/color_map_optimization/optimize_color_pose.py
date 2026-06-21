@@ -6,6 +6,7 @@ from mq3drecon.dataio.data_io import DataIO
 from mq3drecon.models.camera_dataset import CameraDataset
 from mq3drecon.models.side import Side
 from mq3drecon.models.transforms import CoordinateSystem, Transforms
+from mq3drecon.processing.reconstruction.utils.mesh_extraction import extract_triangle_mesh_with_cpu_fallback
 from mq3drecon.processing.reconstruction.utils.o3d_utils import convert_dataset_to_trajectory, convert_trajectory_to_transforms, raycast_in_color_view
 
 
@@ -14,9 +15,10 @@ def optimize_color_pose(
     data_io: DataIO,
     config: ColorOptimizationConfig
 ) -> tuple[o3d.geometry.TriangleMesh, dict[Side, CameraDataset]]:
-    mesh = vbg.extract_triangle_mesh(
+    mesh = extract_triangle_mesh_with_cpu_fallback(
+        vbg,
         weight_threshold=config.weight_threshold,
-        estimated_vertex_number=config.estimated_vertex_number
+        estimated_vertex_number=config.estimated_vertex_number,
     )
 
     scene = o3d.t.geometry.RaycastingScene(device=to_open3d_device(config.device))

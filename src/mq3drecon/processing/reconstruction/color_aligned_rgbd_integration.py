@@ -10,6 +10,7 @@ from mq3drecon.models.camera_dataset import CameraDataset, DepthDataset
 from mq3drecon.models.side import Side
 from mq3drecon.models.transforms import CoordinateSystem
 from mq3drecon.processing.reconstruction.adapters.open3d_adapter import to_open3d_device
+from mq3drecon.processing.reconstruction.utils.mesh_extraction import extract_triangle_mesh_with_cpu_fallback
 from mq3drecon.processing.reconstruction.utils.o3d_utils import compute_o3d_intrinsic_matrices
 
 
@@ -152,7 +153,7 @@ def reconstruct_color_aligned_rgbd_scene(data_io: DataIO, config: Reconstruction
             trunc_voxel_multiplier=integration_config.trunc_voxel_multiplier,
         )
 
-    mesh = vbg.extract_triangle_mesh()
+    mesh = extract_triangle_mesh_with_cpu_fallback(vbg)
     data_io.reconstruction.save_colored_mesh(mesh=mesh)
 
     legacy_mesh = None

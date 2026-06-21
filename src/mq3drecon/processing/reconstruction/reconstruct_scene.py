@@ -13,6 +13,7 @@ from mq3drecon.processing.reconstruction.color_map_optimization.optimize_color_p
 from mq3drecon.processing.reconstruction.confidence_estimation.estimate_depth_confidences import estimate_depth_confidences
 from mq3drecon.processing.reconstruction.depth_optimization.depth_pose_optimizer import DepthPoseOptimizer
 from mq3drecon.processing.reconstruction.utils.log_utils import log_step
+from mq3drecon.processing.reconstruction.utils.mesh_extraction import extract_triangle_mesh_with_cpu_fallback
 from mq3drecon.processing.reconstruction.utils.o3d_utils import integrate, raycast_in_color_view
 
 
@@ -154,9 +155,10 @@ def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
     elif config.render_color_aligned_depth:
         log_step("Render color-aligned depth")
 
-        mesh = vbg.extract_triangle_mesh(
+        mesh = extract_triangle_mesh_with_cpu_fallback(
+            vbg,
             weight_threshold=config.color_aligned_depth_rendering.weight_threshold,
-            estimated_vertex_number=config.color_aligned_depth_rendering.estimated_vertex_number
+            estimated_vertex_number=config.color_aligned_depth_rendering.estimated_vertex_number,
         )
 
         scene = o3d.t.geometry.RaycastingScene(device=to_open3d_device(config.device))

@@ -86,3 +86,13 @@ color-aligned depth rendering.
 
 The color-aligned RGBD path must treat saved color-aligned depth maps as the
 selected depth source and must not render over them as an intermediate output.
+
+# TSDF Mesh Extraction
+
+Reconstruction paths that extract triangle meshes from Open3D `VoxelBlockGrid`
+objects should preserve the configured TSDF integration resolution by default.
+
+When CUDA mesh extraction fails because Open3D cannot allocate the Marching
+Cubes assistance mesh structure, reconstruction should retry mesh extraction on
+CPU instead of requiring users to reduce reconstruction resolution first. Other
+mesh extraction failures must continue to propagate to callers.
