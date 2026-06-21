@@ -116,6 +116,9 @@ class ImagePathConfig:
     def get_yuv_dir(self, side: Side) -> Path:
         return self.project_dir / YUV_DIR_MAP[side]
 
+    def get_yuv_file_path(self, side: Side, timestamp: int) -> Path:
+        return self.get_yuv_dir(side=side) / f"{timestamp}.yuv"
+
     def get_yuv_image_paths(self, side: Side) -> list[Path]:
         return sorted(self.get_yuv_dir(side).glob("*.yuv"))
 
@@ -154,6 +157,9 @@ class ImagePathConfig:
 
     def get_mruk_rgba_png_path(self, side: Side, timestamp: int) -> Path:
         return self.get_mruk_rgba_png_dir(side=side) / f"{timestamp}.png"
+
+    def get_mruk_rgba_png_paths(self, side: Side) -> list[Path]:
+        return sorted(self.get_mruk_rgba_png_dir(side).glob("*.png"))
 
     def get_mruk_intrinsics_json_path(self, side: Side) -> Path:
         return self.project_dir / MRUK_INTRINSICS_JSON_MAP[side]

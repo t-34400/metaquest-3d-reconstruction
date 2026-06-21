@@ -153,12 +153,18 @@ format-aware color image loader. It must not reconstruct legacy RGB PNG paths
 from timestamps when the dataset may reference MRUK `.rgba` frames.
 
 Consumers that require three-channel RGB images may use the format-aware RGB
-loader, `ImageDataIO.load_rgb(side, timestamp)`. For legacy Camera2 recordings, it reads generated RGB PNG files from the
-legacy RGB directories. For MRUK recordings, it must first read generated MRUK
-RGBA PNG files when available, then fall back to the MRUK color dataset source
-image for the requested timestamp. When an MRUK source image has an alpha
-channel, the loader must return the first three channels as RGB and hide the
-alpha channel from callers.
+loader, `ImageDataIO.load_rgb(side, timestamp)`. Callers must not need to know
+whether the requested color frame has already been exported to PNG.
+
+For legacy Camera2 recordings, `load_rgb` must read generated RGB PNG files
+from the legacy RGB directories when present, then fall back to decoding the
+matching raw `YUV_420_888` frame with the backend image format metadata.
+
+For MRUK recordings, `load_rgb` must prefer the raw MRUK `.rgba` source frame
+when present because it avoids PNG decoding overhead, then fall back to a
+generated MRUK RGBA PNG when only the exported PNG exists. When an MRUK source
+image has an alpha channel, the loader must return the first three channels as
+RGB and hide the alpha channel from callers.
 
 # MRUK COLMAP Export
 
