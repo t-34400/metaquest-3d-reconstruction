@@ -80,6 +80,7 @@ def _resolve_config(
             save_rgba_png=resolved.save_rgba_png,
             save_color_aligned_depth=resolved.save_color_aligned_depth,
             cache_rectification_maps=resolved.cache_rectification_maps,
+            skip_existing_outputs=resolved.skip_existing_outputs,
             save_depth_png=resolved.save_depth_png,
             depth_png_scale=resolved.depth_png_scale,
             save_depth_preview_png=resolved.save_depth_preview_png,
@@ -124,8 +125,8 @@ def run_foundation_stereo_depth(
     baselines: list[float] = []
 
     for pair in tqdm(pairs, desc="FoundationStereo depth", unit="pair"):
-        left_image = data_io.color.load_color_image(left_dataset, pair.left_index)
-        right_image = data_io.color.load_color_image(right_dataset, pair.right_index)
+        left_timestamp = int(left_dataset.timestamps[pair.left_index])
+        right_timestamp = int(right_dataset.timestamps[pair.right_index])
         rectification = _compute_or_load_rectification(
             left_dataset=left_dataset,
             right_dataset=right_dataset,
@@ -133,33 +134,73 @@ def run_foundation_stereo_depth(
             config=resolved_config,
             cache=rectification_cache,
         )
-        rectified_left = rectify_image(left_image, rectification.left_map_x, rectification.left_map_y)
-        rectified_right = rectify_image(right_image, rectification.right_map_x, rectification.right_map_y)
+        depth_exists = data_io.path_config.rgbd.get_rectified_stereo_depth_path(Side.LEFT, left_timestamp).exists()
+        compat_depth_exists = data_io.path_config.rgbd.get_color_aligned_depth_path(Side.LEFT, left_timestamp).exists()
+        rectified_left_exists = data_io.path_config.image.get_rectified_stereo_color_path(Side.LEFT, left_timestamp).exists()
+        rectified_right_exists = data_io.path_config.image.get_rectified_stereo_color_path(Side.RIGHT, right_timestamp).exists()
+        needs_rectified_color = not (resolved_config.skip_existing_outputs and rectified_left_exists and rectified_right_exists)
+        needs_depth = not (resolved_config.skip_existing_outputs and depth_exists)
+        needs_compat_depth = resolved_config.save_color_aligned_depth and not (resolved_config.skip_existing_outputs and compat_depth_exists)
+        needs_rgba_png = resolved_config.save_rgba_png and not (
+            resolved_config.skip_existing_outputs
+            and data_io.path_config.image.get_mruk_rgba_png_path(Side.LEFT, left_timestamp).exists()
+            and data_io.path_config.image.get_mruk_rgba_png_path(Side.RIGHT, right_timestamp).exists()
+        )
 
-        left_timestamp = int(left_dataset.timestamps[pair.left_index])
-        right_timestamp = int(right_dataset.timestamps[pair.right_index])
-        data_io.color.save_rectified_stereo_rgb_image(rectified_left, Side.LEFT, left_timestamp)
-        data_io.color.save_rectified_stereo_rgb_image(rectified_right, Side.RIGHT, right_timestamp)
+        rectified_left = None
+        rectified_right = None
+        left_image = None
+        right_image = None
 
-        if resolved_config.save_rgba_png:
+        if needs_rectified_color or needs_depth or needs_rgba_png:
+            left_image = data_io.color.load_color_image(left_dataset, pair.left_index)
+            right_image = data_io.color.load_color_image(right_dataset, pair.right_index)
+
+        if needs_rectified_color or needs_depth:
+            rectified_left = rectify_image(left_image, rectification.left_map_x, rectification.left_map_y)
+            rectified_right = rectify_image(right_image, rectification.right_map_x, rectification.right_map_y)
+
+        if needs_rectified_color:
+            data_io.color.save_rectified_stereo_rgb_image(rectified_left, Side.LEFT, left_timestamp)
+            data_io.color.save_rectified_stereo_rgb_image(rectified_right, Side.RIGHT, right_timestamp)
+
+        if needs_rgba_png:
             _save_rgba_png(data_io, Side.LEFT, left_timestamp, left_image)
             _save_rgba_png(data_io, Side.RIGHT, right_timestamp, right_image)
 
         if Side.LEFT in resolved_config.output_sides:
-            disparity = disparity_model.predict_disparity(rectified_left, rectified_right)
-            depth = _disparity_to_depth(
-                disparity=disparity,
-                fx=float(rectification.left_intrinsic[0, 0]),
-                baseline_m=_resolve_rectified_baseline(rectification, resolved_config),
-                config=resolved_config,
-            )
-            data_io.rgbd.save_rectified_stereo_depth(depth, side=Side.LEFT, timestamp=left_timestamp)
-            if resolved_config.save_color_aligned_depth:
+            if needs_depth:
+                disparity = disparity_model.predict_disparity(rectified_left, rectified_right)
+                depth = _disparity_to_depth(
+                    disparity=disparity,
+                    fx=float(rectification.left_intrinsic[0, 0]),
+                    baseline_m=_resolve_rectified_baseline(rectification, resolved_config),
+                    config=resolved_config,
+                )
+                data_io.rgbd.save_rectified_stereo_depth(depth, side=Side.LEFT, timestamp=left_timestamp)
+            elif needs_compat_depth:
+                depth = data_io.rgbd.load_rectified_stereo_depth(Side.LEFT, left_timestamp)
+            else:
+                depth = None
+
+            if needs_compat_depth:
                 color_aligned_depth = inverse_rectify_left_depth(depth, rectification)
                 data_io.rgbd.save_color_aligned_depth(depth_map=color_aligned_depth, side=Side.LEFT, timestamp=left_timestamp)
-                if resolved_config.save_depth_png:
+            elif resolved_config.save_color_aligned_depth and (resolved_config.save_depth_png or resolved_config.save_depth_preview_png):
+                color_aligned_depth = data_io.rgbd.load_color_aligned_depth(Side.LEFT, left_timestamp)
+            else:
+                color_aligned_depth = None
+
+            if resolved_config.save_color_aligned_depth:
+                if resolved_config.save_depth_png and not (
+                    resolved_config.skip_existing_outputs
+                    and data_io.path_config.rgbd.get_color_aligned_depth_png_path(Side.LEFT, left_timestamp).exists()
+                ):
                     _save_depth_png(data_io, Side.LEFT, left_timestamp, color_aligned_depth, resolved_config.depth_png_scale)
-                if resolved_config.save_depth_preview_png:
+                if resolved_config.save_depth_preview_png and not (
+                    resolved_config.skip_existing_outputs
+                    and data_io.path_config.rgbd.get_color_aligned_depth_preview_png_path(Side.LEFT, left_timestamp).exists()
+                ):
                     _save_depth_preview_png(data_io, Side.LEFT, left_timestamp, color_aligned_depth, resolved_config)
             depth_file_names.append(data_io.path_config.rgbd.get_rectified_stereo_depth_filename(left_timestamp))
 

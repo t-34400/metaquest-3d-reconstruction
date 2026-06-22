@@ -74,6 +74,7 @@ Optional config flags can also write decoded color PNGs and compatibility color-
 foundation_stereo:
   save_color_aligned_depth: false
   cache_rectification_maps: true
+  skip_existing_outputs: true
 ```
 
 Saved compatibility `.npy` depth maps can also be exported later:

@@ -241,3 +241,57 @@ def test_foundation_stereo_config_rejects_png_without_compat_color_aligned_depth
         assert "save_color_aligned_depth=True" in str(exc)
     else:
         raise AssertionError("Expected PNG export without compatibility depth to be rejected")
+
+
+def test_run_foundation_stereo_depth_skips_existing_rectified_depth_outputs(tmp_path):
+    _write_rgb(tmp_path / "left_camera_rgb" / "1000.png", 20)
+    _write_rgb(tmp_path / "right_camera_rgb" / "1002.png", 30)
+    _save_color_dataset(tmp_path, Side.LEFT, 1000, 0.0)
+    _save_color_dataset(tmp_path, Side.RIGHT, 1002, 0.2)
+
+    first_model = ConstantDisparityModel(disparity=10.0)
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(max_depth_m=None, save_color_aligned_depth=False),
+        disparity_model=first_model,
+    )
+    assert len(first_model.calls) == 1
+
+    second_model = ConstantDisparityModel(disparity=1.0)
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(max_depth_m=None, save_color_aligned_depth=False),
+        disparity_model=second_model,
+    )
+
+    assert second_model.calls == []
+    depth = np.load(tmp_path / "left_rectified_stereo_depth" / "1000.npy")
+    assert np.allclose(depth, 2.0)
+
+
+def test_run_foundation_stereo_depth_can_force_recompute_existing_outputs(tmp_path):
+    _write_rgb(tmp_path / "left_camera_rgb" / "1000.png", 20)
+    _write_rgb(tmp_path / "right_camera_rgb" / "1002.png", 30)
+    _save_color_dataset(tmp_path, Side.LEFT, 1000, 0.0)
+    _save_color_dataset(tmp_path, Side.RIGHT, 1002, 0.2)
+
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(max_depth_m=None, save_color_aligned_depth=False),
+        disparity_model=ConstantDisparityModel(disparity=10.0),
+    )
+
+    recompute_model = ConstantDisparityModel(disparity=20.0)
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(
+            max_depth_m=None,
+            save_color_aligned_depth=False,
+            skip_existing_outputs=False,
+        ),
+        disparity_model=recompute_model,
+    )
+
+    assert len(recompute_model.calls) == 1
+    depth = np.load(tmp_path / "left_rectified_stereo_depth" / "1000.npy")
+    assert np.allclose(depth, 1.0)

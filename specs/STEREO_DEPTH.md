@@ -55,6 +55,8 @@ When the ONNX model uses dynamic spatial dimensions, callers must provide `input
 
 The workflow must rectify left and right color frames before stereo inference. Rectification must use the loaded left/right intrinsics and per-frame relative camera pose. When distortion coefficients are unavailable, the workflow may assume zero lens distortion. When `FoundationStereoConfig.cache_rectification_maps` is enabled, implementations may reuse rectification maps for frames with the same image size, intrinsics, and relative stereo geometry.
 
+When `FoundationStereoConfig.skip_existing_outputs` is enabled, the workflow must skip ONNX disparity inference for a frame whose native rectified stereo depth output already exists. The workflow may still rebuild dataset metadata, missing rectified color images, debug PNGs, or requested compatibility color-aligned outputs from existing depth maps. When the option is disabled, the workflow must recompute and overwrite generated stereo outputs.
+
 The rectified left and right color frames must be saved as a dataset. The rectified left depth dataset must store intrinsics derived from the rectified left projection matrix, not the original left color intrinsics. The rectified left camera pose must be updated consistently with the left rectification rotation.
 
 The workflow must keep compatibility color-aligned depth output separate from the rectified stereo depth dataset. Color-aligned depth is a derived compatibility view and must not replace the native rectified stereo depth used for stereo reconstruction. Implementations should avoid building inverse rectification maps when compatibility color-aligned depth output and compatibility PNG output are disabled.

@@ -24,6 +24,7 @@ class FoundationStereoConfig:
     save_rgba_png: bool = False
     save_color_aligned_depth: bool = True
     cache_rectification_maps: bool = True
+    skip_existing_outputs: bool = True
     save_depth_png: bool = False
     depth_png_scale: float = 1000.0
     save_depth_preview_png: bool = False

@@ -150,6 +150,8 @@ Library modules must not depend on CLI progress output for correctness.
 
 Machine-readable output must not be mixed with human progress output unless the command explicitly documents that format.
 
+FoundationStereo commands must honor `FoundationStereoConfig.skip_existing_outputs` from the selected configuration. Existing rectified stereo depth files must allow the command to skip ONNX inference for matching frames when the option is enabled.
+
 ---
 
 # Headless Safety
