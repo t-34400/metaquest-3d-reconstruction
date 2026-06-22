@@ -28,9 +28,14 @@ def _load_rgbd_images(
     depth_dataset: DepthDataset,
     index: int,
     device: o3d.core.Device,
+    *,
+    depth_kind: str = "color_aligned",
 ) -> tuple[o3d.t.geometry.Image, o3d.t.geometry.Image]:
     color = data_io.color.load_color_rgb_image(dataset=color_dataset, index=index)
-    depth = data_io.rgbd.load_color_aligned_depth_by_index(side=Side.LEFT, dataset=depth_dataset, index=index)
+    if depth_kind == "rectified_stereo":
+        depth = data_io.rgbd.load_rectified_stereo_depth_by_index(side=Side.LEFT, dataset=depth_dataset, index=index)
+    else:
+        depth = data_io.rgbd.load_color_aligned_depth_by_index(side=Side.LEFT, dataset=depth_dataset, index=index)
     if depth is None:
         raise FileNotFoundError(f"Color-aligned depth is missing for index {index}")
 
@@ -108,11 +113,17 @@ def reconstruct_color_aligned_rgbd_scene(data_io: DataIO, config: Reconstruction
     integration_config = config.depth_integration
     device = to_open3d_device(integration_config.device)
 
-    full_color_dataset = data_io.color.load_color_dataset(side=Side.LEFT, use_cache=config.use_dataset_cache)
-    color_dataset, depth_dataset = data_io.rgbd.build_color_aligned_rgbd_datasets(
-        side=Side.LEFT,
-        color_dataset=full_color_dataset,
-    )
+    depth_kind = "color_aligned"
+    try:
+        color_dataset, depth_dataset = data_io.rgbd.build_rectified_stereo_rgbd_datasets(side=Side.LEFT)
+        depth_kind = "rectified_stereo"
+        print("[Info] Using rectified stereo RGBD frames for color_aligned depth source.")
+    except FileNotFoundError:
+        full_color_dataset = data_io.color.load_color_dataset(side=Side.LEFT, use_cache=config.use_dataset_cache)
+        color_dataset, depth_dataset = data_io.rgbd.build_color_aligned_rgbd_datasets(
+            side=Side.LEFT,
+            color_dataset=full_color_dataset,
+        )
 
     depth_dataset.transforms = depth_dataset.transforms.convert_coordinate_system(
         target_coordinate_system=CoordinateSystem.OPEN3D,
@@ -140,6 +151,7 @@ def reconstruct_color_aligned_rgbd_scene(data_io: DataIO, config: Reconstruction
             depth_dataset=depth_dataset,
             index=index,
             device=device,
+            depth_kind=depth_kind,
         )
         intrinsic = o3d.core.Tensor(intrinsic_matrices[index], dtype=o3d.core.Dtype.Float64)
         extrinsic = o3d.core.Tensor(extrinsic_wc[index], dtype=o3d.core.Dtype.Float64)

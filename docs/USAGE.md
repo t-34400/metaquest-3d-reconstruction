@@ -465,3 +465,45 @@ from mq3drecon.workflows import (
     run_yuv_to_rgb,
 )
 ```
+
+
+## Rectified stereo depth loading
+
+FoundationStereo output is saved first in rectified stereo coordinates. Use the
+rectified stereo loaders when feeding the generated depth into geometry code. The
+legacy color-aligned depth loaders remain available for compatibility and
+inspection in the original left color coordinate system.
+
+```python
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import Side
+
+data_io = DataIO(project_dir)
+
+rectified_color_dataset, rectified_depth_dataset = data_io.rgbd.build_rectified_stereo_rgbd_datasets(
+    Side.LEFT,
+)
+rectified_color = data_io.color.load_color_rgb_image(rectified_color_dataset, 0)
+rectified_depth = data_io.rgbd.load_rectified_stereo_depth_by_index(
+    Side.LEFT,
+    rectified_depth_dataset,
+    0,
+)
+rectification = data_io.rgbd.load_stereo_rectification()
+```
+
+For compatibility with older processing that expects original left color
+coordinates:
+
+```python
+source_color_dataset = data_io.color.load_color_dataset(Side.LEFT)
+color_dataset, depth_dataset = data_io.rgbd.build_color_aligned_rgbd_datasets(
+    Side.LEFT,
+    source_color_dataset,
+)
+color_aligned_depth = data_io.rgbd.load_color_aligned_depth_by_index(
+    Side.LEFT,
+    depth_dataset,
+    0,
+)
+```

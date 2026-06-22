@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 from mq3drecon.config import FoundationStereoConfig
-from mq3drecon.models import CameraDataset, CoordinateSystem, Side, Transforms
+from mq3drecon.models import CameraDataset, CoordinateSystem, DepthDataset, Side, Transforms
 from mq3drecon.processing.stereo_depth.preprocessing import resize_disparity_to_original, resize_pad_image
 from mq3drecon.workflows import run_foundation_stereo_depth
 
@@ -188,3 +188,30 @@ def test_foundation_stereo_config_rejects_right_depth_output():
         assert "only left" in str(exc)
     else:
         raise AssertionError("Expected right output side to be rejected")
+
+
+def test_run_foundation_stereo_depth_writes_rectified_stereo_artifacts(tmp_path):
+    _write_rgb(tmp_path / "left_camera_rgb" / "1000.png", 20)
+    _write_rgb(tmp_path / "right_camera_rgb" / "1002.png", 30)
+    _save_color_dataset(tmp_path, Side.LEFT, 1000, 0.0)
+    _save_color_dataset(tmp_path, Side.RIGHT, 1002, 0.2)
+    model = ConstantDisparityModel(disparity=10.0)
+
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(max_depth_m=None),
+        disparity_model=model,
+    )
+
+    rectified_depth = np.load(tmp_path / "left_rectified_stereo_depth" / "1000.npy")
+    rectified_color = cv2.imread(str(tmp_path / "left_rectified_stereo_color" / "1000.png"))
+    rectified_color_dataset = CameraDataset.load(tmp_path / "dataset" / "left_rectified_stereo_color_dataset.npz")
+    rectified_depth_dataset = DepthDataset.load(tmp_path / "dataset" / "left_rectified_stereo_depth_dataset.npz")
+    rectification = np.load(tmp_path / "dataset" / "stereo_rectification.npz")
+
+    assert rectified_depth.shape == (4, 6)
+    assert rectified_color.shape == (4, 6, 3)
+    assert rectified_color_dataset.directory_relative_path == "left_rectified_stereo_color"
+    assert rectified_depth_dataset.directory_relative_path == "left_rectified_stereo_depth"
+    assert rectification["baseline_m"].shape == (1,)
+    assert np.allclose(rectified_depth, 2.0)

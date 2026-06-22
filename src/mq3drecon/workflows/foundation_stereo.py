@@ -12,13 +12,20 @@ from tqdm import tqdm
 
 from mq3drecon.config.foundation_stereo_config import FoundationStereoConfig
 from mq3drecon.dataio.data_io import DataIO
-from mq3drecon.models.camera_dataset import CameraDataset
+from mq3drecon.models.camera_dataset import CameraDataset, DepthDataset
 from mq3drecon.models.side import Side
 from mq3drecon.processing.depth_conversion.color_aligned_depth_png import (
     save_depth_preview_png,
     save_metric_depth_png,
 )
 from mq3drecon.processing.stereo_depth.foundation_stereo_onnx import FoundationStereoOnnxModel
+from mq3drecon.processing.stereo_depth.rectification import (
+    StereoRectification,
+    compute_stereo_rectification,
+    inverse_rectify_left_depth,
+    make_rectified_dataset,
+    rectify_image,
+)
 
 
 class StereoDisparityModel(Protocol):
@@ -100,32 +107,136 @@ def run_foundation_stereo_depth(
     if not pairs:
         raise ValueError("No stereo frame pairs found for FoundationStereo depth generation")
 
+    left_rectifications: list[StereoRectification] = []
+    left_indices: list[int] = []
+    right_indices: list[int] = []
+    left_file_names: list[str] = []
+    right_file_names: list[str] = []
+    depth_file_names: list[str] = []
+    left_projections: list[np.ndarray] = []
+    right_projections: list[np.ndarray] = []
+    left_rectification_matrices: list[np.ndarray] = []
+    right_rectification_matrices: list[np.ndarray] = []
+    baselines: list[float] = []
+
     for pair in tqdm(pairs, desc="FoundationStereo depth", unit="pair"):
         left_image = data_io.color.load_color_image(left_dataset, pair.left_index)
         right_image = data_io.color.load_color_image(right_dataset, pair.right_index)
+        rectification = compute_stereo_rectification(left_dataset, right_dataset, pair.left_index, pair.right_index)
+        rectified_left = rectify_image(left_image, rectification.left_map_x, rectification.left_map_y)
+        rectified_right = rectify_image(right_image, rectification.right_map_x, rectification.right_map_y)
+
+        left_timestamp = int(left_dataset.timestamps[pair.left_index])
+        right_timestamp = int(right_dataset.timestamps[pair.right_index])
+        data_io.color.save_rectified_stereo_rgb_image(rectified_left, Side.LEFT, left_timestamp)
+        data_io.color.save_rectified_stereo_rgb_image(rectified_right, Side.RIGHT, right_timestamp)
 
         if resolved_config.save_rgba_png:
-            _save_rgba_png(data_io, Side.LEFT, int(left_dataset.timestamps[pair.left_index]), left_image)
-            _save_rgba_png(data_io, Side.RIGHT, int(right_dataset.timestamps[pair.right_index]), right_image)
+            _save_rgba_png(data_io, Side.LEFT, left_timestamp, left_image)
+            _save_rgba_png(data_io, Side.RIGHT, right_timestamp, right_image)
 
         if Side.LEFT in resolved_config.output_sides:
-            disparity = disparity_model.predict_disparity(left_image, right_image)
+            disparity = disparity_model.predict_disparity(rectified_left, rectified_right)
             depth = _disparity_to_depth(
                 disparity=disparity,
-                fx=float(left_dataset.fx[pair.left_index]),
-                baseline_m=_resolve_baseline(left_dataset, right_dataset, pair, resolved_config),
+                fx=float(rectification.left_intrinsic[0, 0]),
+                baseline_m=_resolve_rectified_baseline(rectification, resolved_config),
                 config=resolved_config,
             )
-            left_timestamp = int(left_dataset.timestamps[pair.left_index])
-            data_io.rgbd.save_color_aligned_depth(
-                depth_map=depth,
-                side=Side.LEFT,
-                timestamp=left_timestamp,
-            )
+            color_aligned_depth = inverse_rectify_left_depth(depth, rectification)
+            data_io.rgbd.save_rectified_stereo_depth(depth, side=Side.LEFT, timestamp=left_timestamp)
+            data_io.rgbd.save_color_aligned_depth(depth_map=color_aligned_depth, side=Side.LEFT, timestamp=left_timestamp)
             if resolved_config.save_depth_png:
-                _save_depth_png(data_io, Side.LEFT, left_timestamp, depth, resolved_config.depth_png_scale)
+                _save_depth_png(data_io, Side.LEFT, left_timestamp, color_aligned_depth, resolved_config.depth_png_scale)
             if resolved_config.save_depth_preview_png:
-                _save_depth_preview_png(data_io, Side.LEFT, left_timestamp, depth, resolved_config)
+                _save_depth_preview_png(data_io, Side.LEFT, left_timestamp, color_aligned_depth, resolved_config)
+            depth_file_names.append(data_io.path_config.rgbd.get_rectified_stereo_depth_filename(left_timestamp))
+
+        left_indices.append(pair.left_index)
+        right_indices.append(pair.right_index)
+        left_file_names.append(f"{left_timestamp}.png")
+        right_file_names.append(f"{right_timestamp}.png")
+        left_rectifications.append(rectification)
+        left_projections.append(rectification.left_projection)
+        right_projections.append(rectification.right_projection)
+        left_rectification_matrices.append(rectification.left_rectification)
+        right_rectification_matrices.append(rectification.right_rectification)
+        baselines.append(_resolve_rectified_baseline(rectification, resolved_config))
+
+    _save_rectified_datasets(
+        data_io=data_io,
+        left_dataset=left_dataset,
+        right_dataset=right_dataset,
+        left_indices=left_indices,
+        right_indices=right_indices,
+        left_file_names=left_file_names,
+        right_file_names=right_file_names,
+        depth_file_names=depth_file_names,
+        rectifications=left_rectifications,
+        config=resolved_config,
+    )
+    data_io.rgbd.save_stereo_rectification(
+        left_projection=np.asarray(left_projections, dtype=np.float32),
+        right_projection=np.asarray(right_projections, dtype=np.float32),
+        left_rectification=np.asarray(left_rectification_matrices, dtype=np.float32),
+        right_rectification=np.asarray(right_rectification_matrices, dtype=np.float32),
+        baseline_m=np.asarray(baselines, dtype=np.float32),
+        left_timestamps=np.asarray([int(left_dataset.timestamps[i]) for i in left_indices], dtype=np.int64),
+        right_timestamps=np.asarray([int(right_dataset.timestamps[i]) for i in right_indices], dtype=np.int64),
+    )
+
+
+def _save_rectified_datasets(
+    data_io: DataIO,
+    left_dataset: CameraDataset,
+    right_dataset: CameraDataset,
+    left_indices: list[int],
+    right_indices: list[int],
+    left_file_names: list[str],
+    right_file_names: list[str],
+    depth_file_names: list[str],
+    rectifications: list[StereoRectification],
+    config: FoundationStereoConfig,
+) -> None:
+    left_color_dataset = make_rectified_dataset(
+        source_dataset=left_dataset,
+        indices=left_indices,
+        side=Side.LEFT,
+        directory_relative_path="left_rectified_stereo_color",
+        file_names=left_file_names,
+        rectifications=rectifications,
+    )
+    right_color_dataset = make_rectified_dataset(
+        source_dataset=right_dataset,
+        indices=right_indices,
+        side=Side.RIGHT,
+        directory_relative_path="right_rectified_stereo_color",
+        file_names=right_file_names,
+        rectifications=rectifications,
+    )
+    data_io.color.save_rectified_stereo_color_dataset(left_color_dataset, Side.LEFT)
+    data_io.color.save_rectified_stereo_color_dataset(right_color_dataset, Side.RIGHT)
+
+    if depth_file_names:
+        depth_dataset = DepthDataset(
+            directory_relative_path="left_rectified_stereo_depth",
+            image_file_names=np.asarray(depth_file_names),
+            timestamps=left_color_dataset.timestamps,
+            fx=left_color_dataset.fx,
+            fy=left_color_dataset.fy,
+            cx=left_color_dataset.cx,
+            cy=left_color_dataset.cy,
+            transforms=left_color_dataset.transforms,
+            widths=left_color_dataset.widths,
+            heights=left_color_dataset.heights,
+            nears=np.zeros(len(left_color_dataset), dtype=np.float32),
+            fars=np.full(
+                len(left_color_dataset),
+                np.inf if config.max_depth_m is None else float(config.max_depth_m),
+                dtype=np.float32,
+            ),
+        )
+        data_io.rgbd.save_rectified_stereo_depth_dataset(depth_dataset, Side.LEFT)
 
 
 def _resolve_stereo_pairs(
@@ -194,20 +305,10 @@ def _first_existing_column(df: pd.DataFrame, candidates: list[str]) -> str | Non
     return None
 
 
-def _resolve_baseline(
-    left_dataset: CameraDataset,
-    right_dataset: CameraDataset,
-    pair: StereoFramePair,
-    config: FoundationStereoConfig,
-) -> float:
+def _resolve_rectified_baseline(rectification: StereoRectification, config: FoundationStereoConfig) -> float:
     if config.baseline_m is not None:
         return float(config.baseline_m)
-    left_position = np.asarray(left_dataset.transforms.positions[pair.left_index], dtype=np.float64)
-    right_position = np.asarray(right_dataset.transforms.positions[pair.right_index], dtype=np.float64)
-    baseline = float(np.linalg.norm(left_position - right_position))
-    if baseline <= 0.0:
-        raise ValueError("Stereo baseline is zero; pass baseline_m in FoundationStereoConfig")
-    return baseline
+    return rectification.baseline_m
 
 
 def _disparity_to_depth(
@@ -234,8 +335,6 @@ def _save_rgba_png(data_io: DataIO, side: Side, timestamp: int, image: np.ndarra
     else:
         output = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     cv2.imwrite(str(path), output)
-
-
 
 
 def _save_depth_preview_png(

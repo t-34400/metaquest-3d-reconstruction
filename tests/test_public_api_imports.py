@@ -59,6 +59,12 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
         save_metric_depth_png,
     )
     from mq3drecon.processing.rgba_conversion import convert_rgba_directory
+    from mq3drecon.processing.stereo_depth import (
+        StereoRectification,
+        compute_stereo_rectification,
+        inverse_rectify_left_depth,
+        rectify_image,
+    )
     from mq3drecon.processing.yuv_conversion import convert_yuv_directory
     from mq3drecon.workflows import (
         RgbImageStatus,
@@ -113,6 +119,10 @@ def test_lightweight_public_imports_do_not_require_reconstruction_dependencies()
     assert save_depth_preview_png is not None
     assert save_metric_depth_png is not None
     assert convert_rgba_directory is not None
+    assert StereoRectification is not None
+    assert compute_stereo_rectification is not None
+    assert inverse_rectify_left_depth is not None
+    assert rectify_image is not None
     assert convert_yuv_directory is not None
     assert RgbImageStatus is not None
     assert export_colmap_project is not None

@@ -78,14 +78,12 @@ FoundationStereo output. It must not require raw Quest depth files.
 
 # Color-Aligned RGBD Reconstruction
 
-When `depth_source` is `color_aligned`, reconstruction must integrate the LEFT
-color image and LEFT color-aligned depth map as RGBD frames directly. This path
+When `depth_source` is `color_aligned`, reconstruction must prefer saved LEFT rectified stereo RGBD frames when they are available. If rectified stereo RGBD artifacts are absent, it must integrate the LEFT color image and LEFT color-aligned depth map as RGBD frames directly. This path
 must not require RIGHT color images, raw Quest depth files, Quest depth pose
 optimization, Quest depth confidence estimation, color map optimization, or
 color-aligned depth rendering.
 
-The color-aligned RGBD path must treat saved color-aligned depth maps as the
-selected depth source and must not render over them as an intermediate output.
+The color-aligned RGBD path must treat saved rectified stereo depth maps, or saved color-aligned depth maps when rectified stereo depth is unavailable, as the selected depth source and must not render over them as an intermediate output.
 
 # TSDF Mesh Extraction
 

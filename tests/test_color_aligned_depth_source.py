@@ -138,3 +138,40 @@ def test_color_aligned_rgbd_loader_uses_float_color_for_float_depth(tmp_path):
     assert color_image.as_tensor().dtype == o3d.core.Dtype.Float32
     assert depth_image.as_tensor().dtype == o3d.core.Dtype.Float32
     assert np.allclose(color_image.as_tensor().cpu().numpy()[0, 0], [1.0, 128.0 / 255.0, 0.0])
+
+
+def test_rgbd_builds_rectified_stereo_rgbd_datasets(tmp_path):
+    color_dataset = _save_color_dataset(tmp_path, Side.LEFT, [1000])
+    color_dataset.directory_relative_path = "left_rectified_stereo_color"
+    color_dataset.image_file_names = np.asarray(["1000.png"])
+    color_dataset.save(tmp_path / "dataset" / "left_rectified_stereo_color_dataset.npz")
+
+    depth_dataset = color_dataset.__class__.from_dict(color_dataset.to_dict())
+    from mq3drecon.models import DepthDataset
+
+    depth_dataset = DepthDataset(
+        directory_relative_path="left_rectified_stereo_depth",
+        image_file_names=np.asarray(["1000.npy"]),
+        timestamps=color_dataset.timestamps,
+        fx=color_dataset.fx,
+        fy=color_dataset.fy,
+        cx=color_dataset.cx,
+        cy=color_dataset.cy,
+        transforms=color_dataset.transforms,
+        widths=color_dataset.widths,
+        heights=color_dataset.heights,
+        nears=np.asarray([0.0], dtype=np.float32),
+        fars=np.asarray([np.inf], dtype=np.float32),
+    )
+    depth_dataset.save(tmp_path / "dataset" / "left_rectified_stereo_depth_dataset.npz")
+    (tmp_path / "left_rectified_stereo_color").mkdir()
+    (tmp_path / "left_rectified_stereo_depth").mkdir()
+    np.save(tmp_path / "left_rectified_stereo_depth" / "1000.npy", np.ones((4, 6), dtype=np.float32))
+
+    data_io = DataIO(tmp_path)
+    matched_color, matched_depth = data_io.rgbd.build_rectified_stereo_rgbd_datasets(Side.LEFT)
+
+    assert matched_color.directory_relative_path == "left_rectified_stereo_color"
+    assert matched_depth.directory_relative_path == "left_rectified_stereo_depth"
+    assert matched_color.timestamps.tolist() == [1000]
+    assert matched_depth.timestamps.tolist() == [1000]

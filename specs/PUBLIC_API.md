@@ -48,6 +48,7 @@ from mq3drecon.layouts import ColmapExportLayout, LegacyProjectLayout, PackageOu
 from mq3drecon.models import BaseTime, CameraCharacteristics, CameraDataset, ConfidenceMap, CoordinateSystem, DepthDataset, ImageFormatInfo, ImagePlaneInfo, Side, Transforms
 from mq3drecon.pipeline import PipelineProcessor
 from mq3drecon.processing.depth_conversion import ColorAlignedDepthPngExportResult, convert_depth_directory, export_color_aligned_depth_pngs, save_depth_preview_png, save_metric_depth_png
+from mq3drecon.processing.stereo_depth import StereoRectification, compute_stereo_rectification, inverse_rectify_left_depth, rectify_image
 from mq3drecon.processing.visualization import get_camera_visualization_lines, visualize_camera_trajectories
 from mq3drecon.processing.rgba_conversion import convert_rgba_directory
 from mq3drecon.processing.yuv_conversion import convert_yuv_directory
@@ -57,6 +58,24 @@ from mq3drecon.workflows import RgbImageStatus, export_colmap_project, get_rgb_i
 Importing these modules must not require Open3D.
 
 ---
+
+
+# Rectified Stereo RGBD Loading
+
+`RGBDDataIO` exposes public loaders for FoundationStereo rectified stereo outputs:
+
+```python
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import Side
+
+data_io = DataIO(project_dir)
+color_dataset, depth_dataset = data_io.rgbd.build_rectified_stereo_rgbd_datasets(Side.LEFT)
+depth = data_io.rgbd.load_rectified_stereo_depth_by_index(Side.LEFT, depth_dataset, 0)
+rectification = data_io.rgbd.load_stereo_rectification()
+```
+
+The compatibility color-aligned depth loaders remain public for callers that need
+depth in the original left color coordinate system.
 
 # RGB Image Status Helpers
 
