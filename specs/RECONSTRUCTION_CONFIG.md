@@ -109,3 +109,20 @@ When CUDA mesh extraction fails because Open3D cannot allocate the Marching
 Cubes assistance mesh structure, reconstruction should retry mesh extraction on
 CPU instead of requiring users to reduce reconstruction resolution first. Other
 mesh extraction failures must continue to propagate to callers.
+
+# Tiled TSDF Integration
+
+Stereo-generated reconstruction may use `reconstruction.depth_integration.mode` to select TSDF integration behavior. The default `global` mode preserves the existing behavior of integrating all selected RGBD frames into one Open3D `VoxelBlockGrid`. The `tiled` mode is currently scoped to `depth_source: rectified_stereo` and exists to reduce peak GPU memory usage for small voxel sizes by integrating spatial tiles separately.
+
+Tiled integration must derive the metric tile size from:
+
+```text
+tile_size_m = voxel_size * tile_size_voxels
+tile_overlap_m = voxel_size * tile_overlap_voxels
+```
+
+Tiled integration must filter Open3D voxel block coordinates to the expanded tile bounds before integration. Creating a separate `VoxelBlockGrid` per tile without filtering block coordinates is not sufficient because each frame would still allocate blocks from its whole visible depth range.
+
+Tiled integration writes per-tile meshes under `reconstruction/tiles/`, crops each tile mesh to the tile's non-overlapped center bounds, merges non-empty tile meshes, applies conservative duplicate/degenerate/unreferenced cleanup, and writes the merged mesh to the standard `reconstruction/color_mesh.ply` artifact.
+
+Quest depth reconstruction is not part of the tiled TSDF contract. Existing Quest reconstruction behavior must remain on the global integration path unless a future specification explicitly extends tiled integration to Quest depth.

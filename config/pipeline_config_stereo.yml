@@ -37,6 +37,8 @@ reconstruction:
   render_color_aligned_depth: false
 
   depth_integration:
+    mode: "global"
+    # Set mode to "tiled" for high-resolution reconstruction when a single VoxelBlockGrid does not fit GPU memory.
     use_confidence_filtered_depth: false
     confidence_threshold: 0.0
     valid_count_threshold: 1
@@ -45,6 +47,8 @@ reconstruction:
     block_count: 20000
     depth_max: 10.0
     trunc_voxel_multiplier: 8.0
+    tile_size_voxels: 256
+    tile_overlap_voxels: 24
 
   color_optimization:
     weight_threshold: 1.0

@@ -503,3 +503,19 @@ from mq3drecon.workflows import (
     run_yuv_to_rgb,
 )
 ```
+
+## High-resolution rectified-stereo TSDF
+
+For FoundationStereo / rectified-stereo reconstruction, set `reconstruction.depth_integration.mode` to `tiled` when a smaller `voxel_size` does not fit in GPU memory as a single Open3D `VoxelBlockGrid`. Tile size is configured in voxel units so that per-tile memory remains approximately stable when `voxel_size` changes.
+
+```yaml
+reconstruction:
+  depth_source: "rectified_stereo"
+  depth_integration:
+    mode: "tiled"
+    voxel_size: 0.005
+    tile_size_voxels: 256
+    tile_overlap_voxels: 24
+```
+
+Tiled mode writes intermediate tile meshes under `reconstruction/tiles/` and writes the merged mesh to the normal `reconstruction/color_mesh.ply` output.
