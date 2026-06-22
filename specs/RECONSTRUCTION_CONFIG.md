@@ -71,16 +71,14 @@ Supported values are:
 | Value | Meaning |
 | --- | --- |
 | `quest` | Use legacy Quest raw depth descriptors and raw depth maps. This is the default compatibility behavior. |
-| `color_aligned` | Use saved stereo-generated depth maps. Rectified stereo RGBD is preferred when available; compatibility color-aligned depth is the fallback. |
+| `rectified_stereo` | Use saved FoundationStereo-generated rectified stereo RGBD artifacts. This is the preferred stereo-generated reconstruction mode. |
+| `color_aligned` | Backward-compatible alias for the stereo-generated reconstruction path. Rectified stereo RGBD is preferred when available; compatibility color-aligned depth is the fallback. |
 
-The `color_aligned` source is intended for generated stereo depth maps such as
-FoundationStereo output. The name is retained for compatibility with existing
-configuration files, but the primary stereo representation is rectified stereo
-RGBD when those artifacts exist. It must not require raw Quest depth files.
+The `rectified_stereo` source is intended for generated stereo depth maps such as FoundationStereo output. `color_aligned` is retained only for compatibility with existing configuration files and currently selects the same stereo-generated reconstruction path. New configs should prefer `rectified_stereo`. Neither stereo-generated source requires raw Quest depth files.
 
 # Stereo-Generated RGBD Reconstruction
 
-When `depth_source` is `color_aligned`, reconstruction must prefer saved LEFT rectified stereo RGBD frames when they are available. If rectified stereo RGBD artifacts are absent, it must integrate the LEFT color image and LEFT color-aligned depth map as RGBD frames directly. This path
+When `depth_source` is `rectified_stereo` or the legacy alias `color_aligned`, reconstruction must prefer saved LEFT rectified stereo RGBD frames when they are available. If rectified stereo RGBD artifacts are absent, it must integrate the LEFT color image and LEFT color-aligned depth map as RGBD frames directly. This path
 must not require RIGHT color images, raw Quest depth files, Quest depth pose
 optimization, Quest depth confidence estimation, color map optimization, or
 color-aligned depth rendering.

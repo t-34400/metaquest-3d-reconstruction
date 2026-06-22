@@ -24,7 +24,7 @@ def test_run_reconstruct_scene_accepts_direct_config(monkeypatch, tmp_path):
         SimpleNamespace(reconstruct_scene=fake_reconstruct_scene),
     )
 
-    config = ReconstructionConfig(depth_source="color_aligned")
+    config = ReconstructionConfig(depth_source="rectified_stereo")
     reconstruction_workflow.run_reconstruct_scene(tmp_path, config=config)
 
     assert calls[0][0].project_dir == tmp_path

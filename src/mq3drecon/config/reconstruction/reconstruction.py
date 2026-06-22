@@ -14,7 +14,7 @@ from mq3drecon.config.reconstruction.parser import init_dataclass_from_dict
 @dataclass
 class ReconstructionConfig:
     device: DeviceSpec = DEFAULT_DEVICE
-    depth_source: Literal["quest", "color_aligned"] = "quest"
+    depth_source: Literal["quest", "rectified_stereo", "color_aligned"] = "quest"
 
     # Step 0: Dataset generation
     use_dataset_cache: bool = True
@@ -63,8 +63,8 @@ class ReconstructionConfig:
             self._enable_dataset_cache_on_subconfigs()
 
     def _validate_depth_source(self) -> None:
-        if self.depth_source not in ("quest", "color_aligned"):
-            raise ValueError("reconstruction.depth_source must be 'quest' or 'color_aligned'")
+        if self.depth_source not in ("quest", "rectified_stereo", "color_aligned"):
+            raise ValueError("reconstruction.depth_source must be 'quest', 'rectified_stereo', or 'color_aligned'")
 
     def _enable_dataset_cache_on_subconfigs(self):
         for attr_name in vars(self):

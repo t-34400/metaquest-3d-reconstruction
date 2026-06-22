@@ -88,11 +88,11 @@ This uses the default reconstruction configuration.
 
 ### Reconstruct from FoundationStereo depth
 
-First generate stereo depth, then reconstruct with `reconstruction.depth_source` set to `color_aligned`:
+First generate stereo depth, then reconstruct with `reconstruction.depth_source` set to `rectified_stereo`:
 
 ```yaml
 reconstruction:
-  depth_source: color_aligned
+  depth_source: rectified_stereo
   render_color_aligned_depth: false
 ```
 
@@ -104,7 +104,7 @@ mq3drecon reconstruct \
   --config path/to/config.yml
 ```
 
-When `depth_source: color_aligned` is selected, reconstruction first looks for LEFT rectified stereo RGBD artifacts and integrates those with rectified intrinsics. If rectified stereo artifacts are absent, it falls back to the compatibility LEFT color-aligned depth maps and original LEFT color frames. Quest depth confidence estimation, Quest depth pose optimization, and color-aligned depth rendering are skipped for this depth source.
+When `depth_source: rectified_stereo` is selected, reconstruction first looks for LEFT rectified stereo RGBD artifacts and integrates those with rectified intrinsics. If rectified stereo artifacts are absent, it falls back to the compatibility LEFT color-aligned depth maps and original LEFT color frames. Quest depth confidence estimation, Quest depth pose optimization, and color-aligned depth rendering are skipped for this depth source. For backward compatibility, `depth_source: color_aligned` currently selects the same FoundationStereo reconstruction path and should be treated as a legacy alias.
 
 ### Export a COLMAP project
 
@@ -402,7 +402,7 @@ run_foundation_stereo_depth(
 
 run_reconstruct_scene(
     project_dir=project_dir,
-    config=ReconstructionConfig(depth_source="color_aligned"),
+    config=ReconstructionConfig(depth_source="rectified_stereo"),
 )
 ```
 

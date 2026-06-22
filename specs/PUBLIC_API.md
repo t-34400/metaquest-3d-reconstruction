@@ -228,3 +228,6 @@ Legacy modules under `scripts/` may re-export package APIs to preserve existing 
 Compatibility wrappers must not introduce new behavior that is unavailable from the package namespace.
 
 Misspelled legacy module names may remain as compatibility aliases, but new public package names must use corrected spelling.
+
+
+`ReconstructionConfig(depth_source="color_aligned")` remains accepted as a backward-compatible alias for the stereo-generated reconstruction path. New code should prefer `depth_source="rectified_stereo"`.

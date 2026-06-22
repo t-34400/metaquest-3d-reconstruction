@@ -18,7 +18,7 @@ from mq3drecon.processing.reconstruction.utils.o3d_utils import integrate, rayca
 
 
 def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
-    if config.depth_source == "color_aligned":
+    if config.depth_source in ("rectified_stereo", "color_aligned"):
         reconstruct_color_aligned_rgbd_scene(data_io=data_io, config=config)
         return
 
@@ -59,9 +59,9 @@ def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
                 depth_dataset_map[side] = dataset
     else:
         if config.estimate_depth_confidences:
-            print("[Info] Skipping Quest depth confidence estimation for color_aligned depth source.")
+            print("[Info] Skipping Quest depth confidence estimation for stereo-generated depth source.")
         if config.optimize_depth_pose:
-            print("[Info] Skipping Quest depth pose optimization for color_aligned depth source.")
+            print("[Info] Skipping Quest depth pose optimization for stereo-generated depth source.")
 
         depth_dataset_map = {}
         for side in (Side.LEFT,):
@@ -150,7 +150,7 @@ def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
             data_io.reconstruction.save_colored_pcd_legacy(pcd=pcd)
 
     # Color aligned depth rendering
-    if config.depth_source == "color_aligned" and config.render_color_aligned_depth:
+    if config.depth_source in ("rectified_stereo", "color_aligned") and config.render_color_aligned_depth:
         print("[Info] Skipping color-aligned depth rendering to avoid overwriting the selected depth source.")
     elif config.render_color_aligned_depth:
         log_step("Render color-aligned depth")

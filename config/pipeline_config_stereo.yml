@@ -30,7 +30,7 @@ depth_to_linear:
 
 reconstruction:
   device: "CUDA:0"
-  depth_source: "color_aligned"
+  depth_source: "rectified_stereo"
 
   use_dataset_cache: false
   estimate_depth_confidences: false

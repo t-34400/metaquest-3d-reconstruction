@@ -40,6 +40,12 @@ def test_reconstruction_config_accepts_color_aligned_depth_source():
     assert config.depth_source == "color_aligned"
 
 
+def test_reconstruction_config_accepts_rectified_stereo_depth_source():
+    config = ReconstructionConfig.parse({"depth_source": "rectified_stereo"})
+
+    assert config.depth_source == "rectified_stereo"
+
+
 def test_reconstruction_config_rejects_unknown_depth_source():
     try:
         ReconstructionConfig.parse({"depth_source": "invalid"})
