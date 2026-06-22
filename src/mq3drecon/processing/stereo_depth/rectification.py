@@ -36,6 +36,8 @@ def compute_stereo_rectification(
     right_dataset: CameraDataset,
     left_index: int,
     right_index: int,
+    *,
+    build_left_inverse_map: bool = True,
 ) -> StereoRectification:
     width = int(left_dataset.widths[left_index])
     height = int(left_dataset.heights[left_index])
@@ -74,7 +76,11 @@ def compute_stereo_rectification(
     right_map_x, right_map_y = cv2.initUndistortRectifyMap(
         right_k, dist, right_rect, right_proj, image_size, cv2.CV_32FC1
     )
-    inv_x, inv_y = _build_left_inverse_rectification_map(left_k, left_rect, left_proj[:3, :3], width, height)
+    if build_left_inverse_map:
+        inv_x, inv_y = _build_left_inverse_rectification_map(left_k, left_rect, left_proj[:3, :3], width, height)
+    else:
+        inv_x = np.empty((0, 0), dtype=np.float32)
+        inv_y = np.empty((0, 0), dtype=np.float32)
 
     fx = float(left_proj[0, 0])
     baseline = abs(float(right_proj[0, 3]) / fx) if fx != 0.0 else 0.0
@@ -108,6 +114,8 @@ def rectify_image(image: np.ndarray, map_x: np.ndarray, map_y: np.ndarray) -> np
 
 
 def inverse_rectify_left_depth(depth: np.ndarray, rectification: StereoRectification) -> np.ndarray:
+    if rectification.left_inverse_map_x.size == 0 or rectification.left_inverse_map_y.size == 0:
+        raise ValueError("left inverse rectification map was not built")
     restored = cv2.remap(
         depth.astype(np.float32, copy=False),
         rectification.left_inverse_map_x,

@@ -10,6 +10,8 @@ foundation_stereo:
   output_sides:
     - left
   save_rgba_png: false
+  save_color_aligned_depth: false
+  cache_rectification_maps: true
   save_depth_png: false
   depth_png_scale: 1000.0
   save_depth_preview_png: false

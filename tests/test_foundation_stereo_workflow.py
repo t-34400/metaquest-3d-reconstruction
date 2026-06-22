@@ -215,3 +215,29 @@ def test_run_foundation_stereo_depth_writes_rectified_stereo_artifacts(tmp_path)
     assert rectified_depth_dataset.directory_relative_path == "left_rectified_stereo_depth"
     assert rectification["baseline_m"].shape == (1,)
     assert np.allclose(rectified_depth, 2.0)
+
+
+def test_run_foundation_stereo_depth_can_skip_compat_color_aligned_depth(tmp_path):
+    _write_rgb(tmp_path / "left_camera_rgb" / "1000.png", 20)
+    _write_rgb(tmp_path / "right_camera_rgb" / "1002.png", 30)
+    _save_color_dataset(tmp_path, Side.LEFT, 1000, 0.0)
+    _save_color_dataset(tmp_path, Side.RIGHT, 1002, 0.2)
+    model = ConstantDisparityModel(disparity=10.0)
+
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(max_depth_m=None, save_color_aligned_depth=False),
+        disparity_model=model,
+    )
+
+    assert (tmp_path / "left_rectified_stereo_depth" / "1000.npy").exists()
+    assert not (tmp_path / "left_color_aligned_depth" / "1000.npy").exists()
+
+
+def test_foundation_stereo_config_rejects_png_without_compat_color_aligned_depth():
+    try:
+        FoundationStereoConfig(save_color_aligned_depth=False, save_depth_preview_png=True)
+    except ValueError as exc:
+        assert "save_color_aligned_depth=True" in str(exc)
+    else:
+        raise AssertionError("Expected PNG export without compatibility depth to be rejected")

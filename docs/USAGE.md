@@ -68,7 +68,15 @@ For compatibility with older tooling, it also writes depth mapped back to the or
 left_color_aligned_depth/*.npy
 ```
 
-Optional config flags can also write decoded color PNGs, 16-bit metric depth PNGs, and 8-bit preview PNGs for inspecting the compatibility color-aligned depth maps. Saved compatibility `.npy` depth maps can also be exported later:
+Optional config flags can also write decoded color PNGs and compatibility color-aligned depth maps. Compatibility color-aligned depth is useful for legacy tools, but disabling it avoids the inverse-rectification and extra I/O cost when reconstruction uses rectified stereo RGBD directly. Metric and preview PNG export require compatibility color-aligned depth output. For rectified reconstruction-only runs, prefer:
+
+```yaml
+foundation_stereo:
+  save_color_aligned_depth: false
+  cache_rectification_maps: true
+```
+
+Saved compatibility `.npy` depth maps can also be exported later:
 
 ```bash
 mq3drecon color-aligned-depth-to-png \

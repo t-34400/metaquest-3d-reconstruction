@@ -142,7 +142,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     stereo_parser = subparsers.add_parser(
         "foundation-stereo-depth",
-        help="Generate color-aligned depth maps with a FoundationStereo ONNX model.",
+        help="Generate rectified stereo depth maps with a FoundationStereo ONNX model.",
     )
     _add_project_and_config_arguments(stereo_parser)
     stereo_parser.add_argument(

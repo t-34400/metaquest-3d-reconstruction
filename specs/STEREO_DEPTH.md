@@ -29,7 +29,7 @@ from mq3drecon.config import FoundationStereoConfig
 from mq3drecon.workflows import run_foundation_stereo_depth
 ```
 
-The workflow consumes left and right color camera frames, rectifies them into a horizontal stereo pair, and writes left-view rectified stereo depth maps. It also writes left-view color-aligned depth maps as a compatibility artifact when operating through `LegacyProjectLayout`. It must not generate right-view depth by swapping model inputs because that output is not part of the supported FoundationStereo workflow contract.
+The workflow consumes left and right color camera frames, rectifies them into a horizontal stereo pair, and writes left-view rectified stereo depth maps. It can also write left-view color-aligned depth maps as a compatibility artifact when `FoundationStereoConfig.save_color_aligned_depth` is enabled. It must not generate right-view depth by swapping model inputs because that output is not part of the supported FoundationStereo workflow contract.
 
 ---
 
@@ -53,11 +53,11 @@ When the ONNX model uses dynamic spatial dimensions, callers must provide `input
 
 # Stereo Rectification
 
-The workflow must rectify left and right color frames before stereo inference. Rectification must use the loaded left/right intrinsics and per-frame relative camera pose. When distortion coefficients are unavailable, the workflow may assume zero lens distortion.
+The workflow must rectify left and right color frames before stereo inference. Rectification must use the loaded left/right intrinsics and per-frame relative camera pose. When distortion coefficients are unavailable, the workflow may assume zero lens distortion. When `FoundationStereoConfig.cache_rectification_maps` is enabled, implementations may reuse rectification maps for frames with the same image size, intrinsics, and relative stereo geometry.
 
 The rectified left and right color frames must be saved as a dataset. The rectified left depth dataset must store intrinsics derived from the rectified left projection matrix, not the original left color intrinsics. The rectified left camera pose must be updated consistently with the left rectification rotation.
 
-The workflow must keep compatibility color-aligned depth output separate from the rectified stereo depth dataset. Color-aligned depth is a derived compatibility view and must not replace the native rectified stereo depth used for stereo reconstruction.
+The workflow must keep compatibility color-aligned depth output separate from the rectified stereo depth dataset. Color-aligned depth is a derived compatibility view and must not replace the native rectified stereo depth used for stereo reconstruction. Implementations should avoid building inverse rectification maps when compatibility color-aligned depth output and compatibility PNG output are disabled.
 
 # Image Preprocessing
 
@@ -99,13 +99,13 @@ When `max_depth_m` is configured, values greater than that depth must not produc
 
 The workflow supports only left-view FoundationStereo depth output. Configuration must reject requests to generate right-view FoundationStereo depth.
 
-The workflow writes native rectified `.npy` depth maps through `RGBDDataIO.save_rectified_stereo_depth`. It also writes compatibility `.npy` color-aligned depth maps through `RGBDDataIO.save_color_aligned_depth`.
+The workflow writes native rectified `.npy` depth maps through `RGBDDataIO.save_rectified_stereo_depth`. When `FoundationStereoConfig.save_color_aligned_depth` is enabled, it also writes compatibility `.npy` color-aligned depth maps through `RGBDDataIO.save_color_aligned_depth`.
 
 When `FoundationStereoConfig.save_rgba_png` is enabled, the workflow also writes decoded color-frame PNG files for inspection. For MRUK `.rgba` inputs, these PNG files must reflect the same decoded and vertically oriented image array used by stereo inference.
 
-When `FoundationStereoConfig.save_depth_png` is enabled, the workflow also writes generated compatibility color-aligned depth as 16-bit PNG files using `depth_png_scale` units per meter. Invalid or non-positive depth values must be written as zero.
+When `FoundationStereoConfig.save_depth_png` is enabled, `FoundationStereoConfig.save_color_aligned_depth` must also be enabled, and the workflow writes generated compatibility color-aligned depth as 16-bit PNG files using `depth_png_scale` units per meter. Invalid or non-positive depth values must be written as zero.
 
-When `FoundationStereoConfig.save_depth_preview_png` is enabled, the workflow also writes generated compatibility color-aligned depth as 8-bit preview PNG files for visual inspection. Preview values must be normalized linearly from `depth_preview_min_m` to `depth_preview_max_m` when a maximum is configured. If the preview maximum is not configured, the workflow may use a finite positive depth percentile or another deterministic fallback suitable for visualization. Invalid or non-positive depth values must be written as zero.
+When `FoundationStereoConfig.save_depth_preview_png` is enabled, `FoundationStereoConfig.save_color_aligned_depth` must also be enabled, and the workflow writes generated compatibility color-aligned depth as 8-bit preview PNG files for visual inspection. Preview values must be normalized linearly from `depth_preview_min_m` to `depth_preview_max_m` when a maximum is configured. If the preview maximum is not configured, the workflow may use a finite positive depth percentile or another deterministic fallback suitable for visualization. Invalid or non-positive depth values must be written as zero.
 
 Saved `.npy` compatibility color-aligned depth maps may also be exported to PNG files after generation through the package workflow `run_color_aligned_depth_to_png` or the CLI command `color-aligned-depth-to-png`. Post-hoc metric PNG export must use the same 16-bit scaling rule as generated metric PNG output. Post-hoc preview export must use the same 8-bit normalization and invalid-depth handling as generated preview PNG output.
 
@@ -119,7 +119,7 @@ dataset/left_rectified_stereo_color_dataset.npz
 dataset/right_rectified_stereo_color_dataset.npz
 dataset/left_rectified_stereo_depth_dataset.npz
 dataset/stereo_rectification.npz
-left_color_aligned_depth/
+left_color_aligned_depth/              # only when compatibility color-aligned depth output is enabled
 left_camera_mruk_rgba_png/
 right_camera_mruk_rgba_png/
 left_color_aligned_depth_png/

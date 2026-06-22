@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import yaml
+from scipy.spatial.transform import Rotation as R
 from tqdm import tqdm
 
 from mq3drecon.config.foundation_stereo_config import FoundationStereoConfig
@@ -77,6 +78,8 @@ def _resolve_config(
             max_pair_timestamp_delta_us=resolved.max_pair_timestamp_delta_us,
             output_sides=resolved.output_sides,
             save_rgba_png=resolved.save_rgba_png,
+            save_color_aligned_depth=resolved.save_color_aligned_depth,
+            cache_rectification_maps=resolved.cache_rectification_maps,
             save_depth_png=resolved.save_depth_png,
             depth_png_scale=resolved.depth_png_scale,
             save_depth_preview_png=resolved.save_depth_preview_png,
@@ -108,6 +111,7 @@ def run_foundation_stereo_depth(
         raise ValueError("No stereo frame pairs found for FoundationStereo depth generation")
 
     left_rectifications: list[StereoRectification] = []
+    rectification_cache: dict[tuple, StereoRectification] = {}
     left_indices: list[int] = []
     right_indices: list[int] = []
     left_file_names: list[str] = []
@@ -122,7 +126,13 @@ def run_foundation_stereo_depth(
     for pair in tqdm(pairs, desc="FoundationStereo depth", unit="pair"):
         left_image = data_io.color.load_color_image(left_dataset, pair.left_index)
         right_image = data_io.color.load_color_image(right_dataset, pair.right_index)
-        rectification = compute_stereo_rectification(left_dataset, right_dataset, pair.left_index, pair.right_index)
+        rectification = _compute_or_load_rectification(
+            left_dataset=left_dataset,
+            right_dataset=right_dataset,
+            pair=pair,
+            config=resolved_config,
+            cache=rectification_cache,
+        )
         rectified_left = rectify_image(left_image, rectification.left_map_x, rectification.left_map_y)
         rectified_right = rectify_image(right_image, rectification.right_map_x, rectification.right_map_y)
 
@@ -143,13 +153,14 @@ def run_foundation_stereo_depth(
                 baseline_m=_resolve_rectified_baseline(rectification, resolved_config),
                 config=resolved_config,
             )
-            color_aligned_depth = inverse_rectify_left_depth(depth, rectification)
             data_io.rgbd.save_rectified_stereo_depth(depth, side=Side.LEFT, timestamp=left_timestamp)
-            data_io.rgbd.save_color_aligned_depth(depth_map=color_aligned_depth, side=Side.LEFT, timestamp=left_timestamp)
-            if resolved_config.save_depth_png:
-                _save_depth_png(data_io, Side.LEFT, left_timestamp, color_aligned_depth, resolved_config.depth_png_scale)
-            if resolved_config.save_depth_preview_png:
-                _save_depth_preview_png(data_io, Side.LEFT, left_timestamp, color_aligned_depth, resolved_config)
+            if resolved_config.save_color_aligned_depth:
+                color_aligned_depth = inverse_rectify_left_depth(depth, rectification)
+                data_io.rgbd.save_color_aligned_depth(depth_map=color_aligned_depth, side=Side.LEFT, timestamp=left_timestamp)
+                if resolved_config.save_depth_png:
+                    _save_depth_png(data_io, Side.LEFT, left_timestamp, color_aligned_depth, resolved_config.depth_png_scale)
+                if resolved_config.save_depth_preview_png:
+                    _save_depth_preview_png(data_io, Side.LEFT, left_timestamp, color_aligned_depth, resolved_config)
             depth_file_names.append(data_io.path_config.rgbd.get_rectified_stereo_depth_filename(left_timestamp))
 
         left_indices.append(pair.left_index)
@@ -185,6 +196,65 @@ def run_foundation_stereo_depth(
         right_timestamps=np.asarray([int(right_dataset.timestamps[i]) for i in right_indices], dtype=np.int64),
     )
 
+
+
+def _compute_or_load_rectification(
+    left_dataset: CameraDataset,
+    right_dataset: CameraDataset,
+    pair: StereoFramePair,
+    config: FoundationStereoConfig,
+    cache: dict[tuple, StereoRectification],
+) -> StereoRectification:
+    build_inverse_map = config.save_color_aligned_depth
+    if not config.cache_rectification_maps:
+        return compute_stereo_rectification(
+            left_dataset,
+            right_dataset,
+            pair.left_index,
+            pair.right_index,
+            build_left_inverse_map=build_inverse_map,
+        )
+
+    key = _rectification_cache_key(left_dataset, right_dataset, pair, build_inverse_map)
+    rectification = cache.get(key)
+    if rectification is None:
+        rectification = compute_stereo_rectification(
+            left_dataset,
+            right_dataset,
+            pair.left_index,
+            pair.right_index,
+            build_left_inverse_map=build_inverse_map,
+        )
+        cache[key] = rectification
+    return rectification
+
+
+def _rectification_cache_key(
+    left_dataset: CameraDataset,
+    right_dataset: CameraDataset,
+    pair: StereoFramePair,
+    build_inverse_map: bool,
+) -> tuple:
+    left_index = pair.left_index
+    right_index = pair.right_index
+    left_rotation = np.asarray(left_dataset.transforms.rotations[left_index], dtype=np.float64)
+    right_rotation = np.asarray(right_dataset.transforms.rotations[right_index], dtype=np.float64)
+    left_position = np.asarray(left_dataset.transforms.positions[left_index], dtype=np.float64)
+    right_position = np.asarray(right_dataset.transforms.positions[right_index], dtype=np.float64)
+    relative_rotation = (R.from_quat(right_rotation).inv() * R.from_quat(left_rotation)).as_quat()
+    relative_rotation = np.round(relative_rotation, 8)
+    relative_translation = np.round(R.from_quat(right_rotation).inv().apply(left_position - right_position), 8)
+    return (
+        int(left_dataset.widths[left_index]),
+        int(left_dataset.heights[left_index]),
+        int(right_dataset.widths[right_index]),
+        int(right_dataset.heights[right_index]),
+        tuple(np.round([left_dataset.fx[left_index], left_dataset.fy[left_index], left_dataset.cx[left_index], left_dataset.cy[left_index]], 8)),
+        tuple(np.round([right_dataset.fx[right_index], right_dataset.fy[right_index], right_dataset.cx[right_index], right_dataset.cy[right_index]], 8)),
+        tuple(relative_rotation),
+        tuple(relative_translation),
+        bool(build_inverse_map),
+    )
 
 def _save_rectified_datasets(
     data_io: DataIO,
