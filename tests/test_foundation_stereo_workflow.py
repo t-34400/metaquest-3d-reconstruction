@@ -7,6 +7,7 @@ from mq3drecon.config import FoundationStereoConfig
 from mq3drecon.models import CameraDataset, CoordinateSystem, DepthDataset, Side, Transforms
 from mq3drecon.processing.stereo_depth.preprocessing import resize_disparity_to_original, resize_pad_image
 from mq3drecon.workflows import run_foundation_stereo_depth
+from mq3drecon.workflows.foundation_stereo import _RECTIFICATION_CACHE_MAX_SIZE, _trim_rectification_cache
 
 
 class ConstantDisparityModel:
@@ -295,3 +296,12 @@ def test_run_foundation_stereo_depth_can_force_recompute_existing_outputs(tmp_pa
     assert len(recompute_model.calls) == 1
     depth = np.load(tmp_path / "left_rectified_stereo_depth" / "1000.npy")
     assert np.allclose(depth, 1.0)
+
+
+def test_rectification_cache_is_bounded():
+    cache = {index: object() for index in range(_RECTIFICATION_CACHE_MAX_SIZE + 3)}
+
+    _trim_rectification_cache(cache)
+
+    assert len(cache) == _RECTIFICATION_CACHE_MAX_SIZE
+    assert list(cache) == list(range(3, _RECTIFICATION_CACHE_MAX_SIZE + 3))
