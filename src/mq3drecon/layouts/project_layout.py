@@ -322,6 +322,12 @@ class ReconstructionPathConfig:
     def get_colored_pcd_path(self) -> Path:
         return self.project_dir / "reconstruction/color.ply"
 
+    def get_tiled_tsdf_mesh_dir(self) -> Path:
+        return self.project_dir / "reconstruction/tiles"
+
+    def get_tiled_tsdf_mesh_path(self, tile_x: int, tile_y: int, tile_z: int) -> Path:
+        return self.get_tiled_tsdf_mesh_dir() / f"tile_x{tile_x:04d}_y{tile_y:04d}_z{tile_z:04d}_mesh.ply"
+
     def get_relative_path(self, path: Path) -> Path:
         return Path(path).relative_to(self.project_dir)
 

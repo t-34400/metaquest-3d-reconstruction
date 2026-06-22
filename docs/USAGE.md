@@ -28,13 +28,20 @@ Legacy scripts under `scripts/` remain available as migration shims. New automat
 
 ## Configuration files
 
-Conversion and reconstruction workflows provide built-in defaults. Use `--config` only when you need to override default settings:
+Conversion, stereo depth generation, and reconstruction workflows provide built-in defaults. Use `--config` only when you need to override default settings. Example pipeline configs are organized by depth source:
+
+```text
+config/pipeline_config.yml          # Quest raw depth pipeline
+config/pipeline_config_stereo.yml   # FoundationStereo depth plus rectified-stereo reconstruction
+```
 
 ```bash
 mq3drecon reconstruct \
   --project-dir path/to/project \
   --config config/pipeline_config.yml
 ```
+
+The stereo example config intentionally contains only `foundation_stereo` and `reconstruction` sections. Quest raw-depth conversion, confidence estimation, depth pose optimization, and color-aligned depth rendering settings belong in the Quest pipeline config.
 
 The CLI accepts both kebab-case and legacy underscore forms for the project and config options where migration compatibility is supported.
 
@@ -45,6 +52,7 @@ The CLI accepts both kebab-case and legacy underscore forms for the project and 
 ```bash
 mq3drecon foundation-stereo-depth \
   --project-dir path/to/project \
+  --config config/pipeline_config_stereo.yml \
   --model-path path/to/foundation_stereo.onnx
 ```
 
@@ -105,12 +113,12 @@ reconstruction:
   render_color_aligned_depth: false
 ```
 
-Then run:
+Then run the reconstruction step with the same stereo pipeline config:
 
 ```bash
 mq3drecon reconstruct \
   --project-dir path/to/project \
-  --config path/to/config.yml
+  --config config/pipeline_config_stereo.yml
 ```
 
 When `depth_source: rectified_stereo` is selected, reconstruction first looks for LEFT rectified stereo RGBD artifacts and integrates those with rectified intrinsics. If rectified stereo artifacts are absent, it falls back to the compatibility LEFT color-aligned depth maps and original LEFT color frames. Quest depth confidence estimation, Quest depth pose optimization, and color-aligned depth rendering are skipped for this depth source. For backward compatibility, `depth_source: color_aligned` currently selects the same FoundationStereo reconstruction path and should be treated as a legacy alias.
@@ -495,3 +503,19 @@ from mq3drecon.workflows import (
     run_yuv_to_rgb,
 )
 ```
+
+## High-resolution rectified-stereo TSDF
+
+For FoundationStereo / rectified-stereo reconstruction, set `reconstruction.depth_integration.mode` to `tiled` when a smaller `voxel_size` does not fit in GPU memory as a single Open3D `VoxelBlockGrid`. Tile size is configured in voxel units so that per-tile memory remains approximately stable when `voxel_size` changes.
+
+```yaml
+reconstruction:
+  depth_source: "rectified_stereo"
+  depth_integration:
+    mode: "tiled"
+    voxel_size: 0.005
+    tile_size_voxels: 256
+    tile_overlap_voxels: 24
+```
+
+Tiled mode writes intermediate tile meshes under `reconstruction/tiles/` and writes the merged mesh to the normal `reconstruction/color_mesh.ply` output.

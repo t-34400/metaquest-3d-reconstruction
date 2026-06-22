@@ -58,6 +58,7 @@ class ReconstructionConfig:
         self.color_aligned_depth_rendering = ColorAlignedDepthRenderingConfig()
 
         self._validate_depth_source()
+        self._validate_depth_integration()
 
         if self.use_dataset_cache:
             self._enable_dataset_cache_on_subconfigs()
@@ -65,6 +66,13 @@ class ReconstructionConfig:
     def _validate_depth_source(self) -> None:
         if self.depth_source not in ("quest", "rectified_stereo", "color_aligned"):
             raise ValueError("reconstruction.depth_source must be 'quest', 'rectified_stereo', or 'color_aligned'")
+
+    def _validate_depth_integration(self) -> None:
+        mode = self.depth_integration.mode
+        if mode not in ("global", "tiled"):
+            raise ValueError("reconstruction.depth_integration.mode must be 'global' or 'tiled'")
+        if mode == "tiled" and self.depth_source != "rectified_stereo":
+            raise ValueError("tiled TSDF integration is currently supported only for rectified_stereo reconstruction")
 
     def _enable_dataset_cache_on_subconfigs(self):
         for attr_name in vars(self):
@@ -78,6 +86,7 @@ class ReconstructionConfig:
         config = init_dataclass_from_dict(cls, config_dict, parent_device=device)
 
         config._validate_depth_source()
+        config._validate_depth_integration()
 
         if config.use_dataset_cache:
             for attr_name in vars(config):

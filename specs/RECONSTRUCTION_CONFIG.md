@@ -85,6 +85,21 @@ color-aligned depth rendering.
 
 The stereo-generated RGBD path must treat saved rectified stereo depth maps, or saved compatibility color-aligned depth maps when rectified stereo depth is unavailable, as the selected depth source and must not render over them as an intermediate output.
 
+
+# Example Pipeline Configuration Files
+
+Example YAML files should be organized around the user's selected depth source.
+The Quest raw-depth example pipeline may include raw-depth conversion, confidence
+estimation, fragment generation, depth-pose refinement, color optimization, and
+color-aligned depth rendering settings.
+
+The stereo example pipeline should contain the FoundationStereo generation section
+and a reconstruction section with `depth_source: rectified_stereo`. It must not
+carry Quest raw-depth-only conversion or optimization sections just to satisfy old
+unified-pipeline structure. Reconstruction subconfigs omitted from the stereo
+example are supplied by `ReconstructionConfig` defaults and are ignored when their
+parent stereo-incompatible steps are disabled.
+
 # TSDF Mesh Extraction
 
 Reconstruction paths that extract triangle meshes from Open3D `VoxelBlockGrid`
@@ -94,3 +109,20 @@ When CUDA mesh extraction fails because Open3D cannot allocate the Marching
 Cubes assistance mesh structure, reconstruction should retry mesh extraction on
 CPU instead of requiring users to reduce reconstruction resolution first. Other
 mesh extraction failures must continue to propagate to callers.
+
+# Tiled TSDF Integration
+
+Stereo-generated reconstruction may use `reconstruction.depth_integration.mode` to select TSDF integration behavior. The default `global` mode preserves the existing behavior of integrating all selected RGBD frames into one Open3D `VoxelBlockGrid`. The `tiled` mode is currently scoped to `depth_source: rectified_stereo` and exists to reduce peak GPU memory usage for small voxel sizes by integrating spatial tiles separately.
+
+Tiled integration must derive the metric tile size from:
+
+```text
+tile_size_m = voxel_size * tile_size_voxels
+tile_overlap_m = voxel_size * tile_overlap_voxels
+```
+
+Tiled integration must filter Open3D voxel block coordinates to the expanded tile bounds before integration. Creating a separate `VoxelBlockGrid` per tile without filtering block coordinates is not sufficient because each frame would still allocate blocks from its whole visible depth range.
+
+Tiled integration writes per-tile meshes under `reconstruction/tiles/`, crops each tile mesh to the tile's non-overlapped center bounds, merges non-empty tile meshes, applies conservative duplicate/degenerate/unreferenced cleanup, and writes the merged mesh to the standard `reconstruction/color_mesh.ply` artifact.
+
+Quest depth reconstruction is not part of the tiled TSDF contract. Existing Quest reconstruction behavior must remain on the global integration path unless a future specification explicitly extends tiled integration to Quest depth.
