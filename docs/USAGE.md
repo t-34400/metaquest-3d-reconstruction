@@ -280,7 +280,9 @@ y: down
 z: forward
 ```
 
-### Load depth maps and confidence maps
+### Load Quest depth maps and confidence maps
+
+Use `data_io.depth` for Quest-native depth frames. These depth maps use the native depth capture layout and are separate from stereo-generated color-aligned depth.
 
 ```python
 from pathlib import Path
@@ -308,6 +310,58 @@ if confidence is not None:
     print(confidence.shape)
     print(confidence.confidence_map)
     print(confidence.valid_count)
+```
+
+### Load color-aligned depth maps
+
+Use `data_io.rgbd` for stereo-generated `.npy` depth maps such as FoundationStereo outputs under `left_color_aligned_depth/`. The dataset is built from an existing color dataset so timestamps, intrinsics, image sizes, and poses remain aligned with the color frames.
+
+```python
+from pathlib import Path
+
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import Side
+
+project_dir = Path("data/projects/test")
+data_io = DataIO(project_dir=project_dir)
+side = Side.LEFT
+
+color_dataset = data_io.color.load_color_dataset(side)
+depth_dataset = data_io.rgbd.build_color_aligned_depth_dataset(
+    side=side,
+    color_dataset=color_dataset,
+)
+
+depth = data_io.rgbd.load_color_aligned_depth_by_index(
+    side=side,
+    dataset=depth_dataset,
+    index=0,
+)
+timestamp = int(depth_dataset.timestamps[0])
+same_depth = data_io.rgbd.load_color_aligned_depth(side, timestamp)
+
+print(depth.shape)
+print(depth.dtype)
+print(same_depth.shape)
+```
+
+`load_color_aligned_depth_by_index()` validates that the loaded array shape matches the dataset image size and returns finite positive metric depth as `float32`, with invalid values set to zero. `load_color_aligned_depth()` loads the saved `.npy` array for a timestamp directly.
+
+When iterating over RGBD frames, use the paired dataset helper so color and depth datasets contain exactly the same timestamps:
+
+```python
+color_rgbd_dataset, depth_dataset = data_io.rgbd.build_color_aligned_rgbd_datasets(
+    side=Side.LEFT,
+    color_dataset=color_dataset,
+)
+
+index = 0
+rgb = data_io.color.load_color_rgb_image(color_rgbd_dataset, index=index)
+depth = data_io.rgbd.load_color_aligned_depth_by_index(
+    side=Side.LEFT,
+    dataset=depth_dataset,
+    index=index,
+)
 ```
 
 ### Run workflows from Python
@@ -340,13 +394,19 @@ These workflows are explicit export helpers. They are not prerequisites for the 
 ```python
 from pathlib import Path
 
-from mq3drecon.workflows import run_depth_to_linear, run_rgba_to_png, run_yuv_to_rgb
+from mq3drecon.workflows import (
+    run_color_aligned_depth_to_png,
+    run_depth_to_linear,
+    run_rgba_to_png,
+    run_yuv_to_rgb,
+)
 
 project_dir = Path("data/projects/test")
 
 run_yuv_to_rgb(project_dir)   # Legacy Camera2 YUV -> RGB PNG export
 run_rgba_to_png(project_dir)  # MRUK RGBA -> PNG export
 run_depth_to_linear(project_dir)
+run_color_aligned_depth_to_png(project_dir)
 ```
 
 Use typed config objects when you need non-default behavior without YAML:
@@ -379,14 +439,29 @@ from mq3drecon import (
     ReconstructionConfig,
     Yuv2RgbConfig,
 )
-from mq3drecon.dataio import DataIO, DepthDataIO, ImageDataIO, RGBDDataIO, ReconstructionDataIO
+from mq3drecon.dataio import (
+    CaptureBackend,
+    DataIO,
+    DepthDataIO,
+    ImageDataIO,
+    MRUKImageDataIO,
+    MRUKIntrinsics,
+    RGBDDataIO,
+    ReconstructionDataIO,
+    SessionInfo,
+    load_session_info,
+)
 from mq3drecon.models import CameraDataset, ConfidenceMap, CoordinateSystem, DepthDataset, Side, Transforms
 from mq3drecon.workflows import (
     export_colmap_project,
+    get_rgb_image_status,
+    has_rgb_images,
+    run_color_aligned_depth_to_png,
     run_depth_to_linear,
     run_foundation_stereo_depth,
     run_reconstruct_scene,
     run_rgba_to_png,
+    run_visualize_camera_trajectories,
     run_yuv_to_rgb,
 )
 ```

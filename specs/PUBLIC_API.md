@@ -40,18 +40,18 @@ The following imports are part of the lightweight public boundary:
 
 ```python
 import mq3drecon
-from mq3drecon import Depth2LinearConfig, FoundationStereoConfig, MQ3DReconError, PipelineConfigs, ProcessingError, ProjectPathConfig, ReconstructionConfig, Yuv2RgbConfig
-from mq3drecon import run_color_aligned_depth_to_png, run_depth_to_linear, run_foundation_stereo_depth, run_reconstruct_scene, run_rgba_to_png, run_yuv_to_rgb
-from mq3drecon.config import Depth2LinearConfig, FoundationStereoConfig, PipelineConfigs, ProjectPathConfig, ReconstructionConfig, Yuv2RgbConfig
-from mq3drecon.dataio import DataIO, DepthDataIO, ImageDataIO, RGBDDataIO, ReconstructionDataIO
+from mq3drecon import Depth2LinearConfig, FoundationStereoConfig, MQ3DReconError, PipelineConfigs, ProcessingError, ProjectPathConfig, ReconstructionConfig, RgbImageStatus, Yuv2RgbConfig
+from mq3drecon import export_colmap_project, get_rgb_image_status, has_rgb_images, run_color_aligned_depth_to_png, run_depth_to_linear, run_foundation_stereo_depth, run_reconstruct_scene, run_rgba_to_png, run_visualize_camera_trajectories, run_yuv_to_rgb
+from mq3drecon.config import ColorAlignedDepthRenderingConfig, ColorOptimizationConfig, Depth2LinearConfig, DepthConfidenceEstimationConfig, FoundationStereoConfig, FragmentGenerationConfig, FragmentPoseRefinementConfig, IntegrationConfig, LegacyProjectLayout, PipelineConfigs, ProjectPathConfig, ReconstructionConfig, Yuv2RgbConfig
+from mq3drecon.dataio import CaptureBackend, DataIO, DepthDataIO, ImageDataIO, MRUKImageDataIO, MRUKIntrinsics, RGBDDataIO, ReconstructionDataIO, SessionInfo, load_session_info
 from mq3drecon.layouts import ColmapExportLayout, LegacyProjectLayout, PackageOutputLayout
 from mq3drecon.models import BaseTime, CameraCharacteristics, CameraDataset, ConfidenceMap, CoordinateSystem, DepthDataset, ImageFormatInfo, ImagePlaneInfo, Side, Transforms
 from mq3drecon.pipeline import PipelineProcessor
-from mq3drecon.processing.depth_conversion import convert_depth_directory, export_color_aligned_depth_pngs
+from mq3drecon.processing.depth_conversion import ColorAlignedDepthPngExportResult, convert_depth_directory, export_color_aligned_depth_pngs, save_depth_preview_png, save_metric_depth_png
 from mq3drecon.processing.visualization import get_camera_visualization_lines, visualize_camera_trajectories
 from mq3drecon.processing.rgba_conversion import convert_rgba_directory
 from mq3drecon.processing.yuv_conversion import convert_yuv_directory
-from mq3drecon.workflows import RgbImageStatus, export_colmap_project, get_rgb_image_status, has_rgb_images, run_color_aligned_depth_to_png, run_depth_to_linear, run_foundation_stereo_depth, run_rgba_to_png, run_yuv_to_rgb
+from mq3drecon.workflows import RgbImageStatus, export_colmap_project, get_rgb_image_status, has_rgb_images, run_color_aligned_depth_to_png, run_depth_to_linear, run_foundation_stereo_depth, run_reconstruct_scene, run_rgba_to_png, run_visualize_camera_trajectories, run_yuv_to_rgb
 ```
 
 Importing these modules must not require Open3D.
@@ -98,13 +98,47 @@ The explicit conversion workflows `run_yuv_to_rgb()` and `run_rgba_to_png()`
 remain available for batch PNG export, cache generation, inspection, and tools
 that require PNG files. They are not required before calling `load_rgb()`.
 
+# Color-Aligned Depth Loading
+
+`RGBDDataIO` is the public reader for saved color-aligned depth maps such as
+FoundationStereo outputs. Callers must build the color-aligned depth dataset from
+the matching color dataset so timestamps, intrinsics, image sizes, and poses stay
+aligned with the color camera frames.
+
+```python
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import Side
+
+data_io = DataIO(project_dir)
+color_dataset = data_io.color.load_color_dataset(Side.LEFT)
+depth_dataset = data_io.rgbd.build_color_aligned_depth_dataset(
+    side=Side.LEFT,
+    color_dataset=color_dataset,
+)
+depth = data_io.rgbd.load_color_aligned_depth_by_index(
+    side=Side.LEFT,
+    dataset=depth_dataset,
+    index=0,
+)
+```
+
+`load_color_aligned_depth_by_index()` must validate the loaded depth shape
+against the dataset frame resolution and return finite positive metric depth as
+`float32`, replacing invalid or non-positive values with zero.
+`load_color_aligned_depth(side, timestamp)` remains available for direct
+timestamp-based `.npy` loading.
+
+`build_color_aligned_rgbd_datasets()` returns color and color-aligned depth
+datasets filtered to the shared timestamp set and is the preferred helper for
+callers that iterate RGBD frames in dataset order.
+
 # Conversion Workflow Configuration
 
 The public conversion workflows support lightweight typed configuration objects and internal defaults.
 
 ```python
 from mq3drecon.config import Depth2LinearConfig, Yuv2RgbConfig
-from mq3drecon.workflows import run_depth_to_linear, run_rgba_to_png, run_yuv_to_rgb
+from mq3drecon.workflows import run_color_aligned_depth_to_png, run_depth_to_linear, run_rgba_to_png, run_yuv_to_rgb
 
 run_yuv_to_rgb(project_dir)
 run_yuv_to_rgb(project_dir, config=Yuv2RgbConfig())
