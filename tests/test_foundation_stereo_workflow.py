@@ -4,9 +4,10 @@ import cv2
 import numpy as np
 
 from mq3drecon.config import FoundationStereoConfig
-from mq3drecon.models import CameraDataset, CoordinateSystem, Side, Transforms
+from mq3drecon.models import CameraDataset, CoordinateSystem, DepthDataset, Side, Transforms
 from mq3drecon.processing.stereo_depth.preprocessing import resize_disparity_to_original, resize_pad_image
 from mq3drecon.workflows import run_foundation_stereo_depth
+from mq3drecon.workflows.foundation_stereo import _RECTIFICATION_CACHE_MAX_SIZE, _trim_rectification_cache
 
 
 class ConstantDisparityModel:
@@ -188,3 +189,119 @@ def test_foundation_stereo_config_rejects_right_depth_output():
         assert "only left" in str(exc)
     else:
         raise AssertionError("Expected right output side to be rejected")
+
+
+def test_run_foundation_stereo_depth_writes_rectified_stereo_artifacts(tmp_path):
+    _write_rgb(tmp_path / "left_camera_rgb" / "1000.png", 20)
+    _write_rgb(tmp_path / "right_camera_rgb" / "1002.png", 30)
+    _save_color_dataset(tmp_path, Side.LEFT, 1000, 0.0)
+    _save_color_dataset(tmp_path, Side.RIGHT, 1002, 0.2)
+    model = ConstantDisparityModel(disparity=10.0)
+
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(max_depth_m=None),
+        disparity_model=model,
+    )
+
+    rectified_depth = np.load(tmp_path / "left_rectified_stereo_depth" / "1000.npy")
+    rectified_color = cv2.imread(str(tmp_path / "left_rectified_stereo_color" / "1000.png"))
+    rectified_color_dataset = CameraDataset.load(tmp_path / "dataset" / "left_rectified_stereo_color_dataset.npz")
+    rectified_depth_dataset = DepthDataset.load(tmp_path / "dataset" / "left_rectified_stereo_depth_dataset.npz")
+    rectification = np.load(tmp_path / "dataset" / "stereo_rectification.npz")
+
+    assert rectified_depth.shape == (4, 6)
+    assert rectified_color.shape == (4, 6, 3)
+    assert rectified_color_dataset.directory_relative_path == "left_rectified_stereo_color"
+    assert rectified_depth_dataset.directory_relative_path == "left_rectified_stereo_depth"
+    assert rectification["baseline_m"].shape == (1,)
+    assert np.allclose(rectified_depth, 2.0)
+
+
+def test_run_foundation_stereo_depth_can_skip_compat_color_aligned_depth(tmp_path):
+    _write_rgb(tmp_path / "left_camera_rgb" / "1000.png", 20)
+    _write_rgb(tmp_path / "right_camera_rgb" / "1002.png", 30)
+    _save_color_dataset(tmp_path, Side.LEFT, 1000, 0.0)
+    _save_color_dataset(tmp_path, Side.RIGHT, 1002, 0.2)
+    model = ConstantDisparityModel(disparity=10.0)
+
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(max_depth_m=None, save_color_aligned_depth=False),
+        disparity_model=model,
+    )
+
+    assert (tmp_path / "left_rectified_stereo_depth" / "1000.npy").exists()
+    assert not (tmp_path / "left_color_aligned_depth" / "1000.npy").exists()
+
+
+def test_foundation_stereo_config_rejects_png_without_compat_color_aligned_depth():
+    try:
+        FoundationStereoConfig(save_color_aligned_depth=False, save_depth_preview_png=True)
+    except ValueError as exc:
+        assert "save_color_aligned_depth=True" in str(exc)
+    else:
+        raise AssertionError("Expected PNG export without compatibility depth to be rejected")
+
+
+def test_run_foundation_stereo_depth_skips_existing_rectified_depth_outputs(tmp_path):
+    _write_rgb(tmp_path / "left_camera_rgb" / "1000.png", 20)
+    _write_rgb(tmp_path / "right_camera_rgb" / "1002.png", 30)
+    _save_color_dataset(tmp_path, Side.LEFT, 1000, 0.0)
+    _save_color_dataset(tmp_path, Side.RIGHT, 1002, 0.2)
+
+    first_model = ConstantDisparityModel(disparity=10.0)
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(max_depth_m=None, save_color_aligned_depth=False),
+        disparity_model=first_model,
+    )
+    assert len(first_model.calls) == 1
+
+    second_model = ConstantDisparityModel(disparity=1.0)
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(max_depth_m=None, save_color_aligned_depth=False),
+        disparity_model=second_model,
+    )
+
+    assert second_model.calls == []
+    depth = np.load(tmp_path / "left_rectified_stereo_depth" / "1000.npy")
+    assert np.allclose(depth, 2.0)
+
+
+def test_run_foundation_stereo_depth_can_force_recompute_existing_outputs(tmp_path):
+    _write_rgb(tmp_path / "left_camera_rgb" / "1000.png", 20)
+    _write_rgb(tmp_path / "right_camera_rgb" / "1002.png", 30)
+    _save_color_dataset(tmp_path, Side.LEFT, 1000, 0.0)
+    _save_color_dataset(tmp_path, Side.RIGHT, 1002, 0.2)
+
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(max_depth_m=None, save_color_aligned_depth=False),
+        disparity_model=ConstantDisparityModel(disparity=10.0),
+    )
+
+    recompute_model = ConstantDisparityModel(disparity=20.0)
+    run_foundation_stereo_depth(
+        tmp_path,
+        config=FoundationStereoConfig(
+            max_depth_m=None,
+            save_color_aligned_depth=False,
+            skip_existing_outputs=False,
+        ),
+        disparity_model=recompute_model,
+    )
+
+    assert len(recompute_model.calls) == 1
+    depth = np.load(tmp_path / "left_rectified_stereo_depth" / "1000.npy")
+    assert np.allclose(depth, 1.0)
+
+
+def test_rectification_cache_is_bounded():
+    cache = {index: object() for index in range(_RECTIFICATION_CACHE_MAX_SIZE + 3)}
+
+    _trim_rectification_cache(cache)
+
+    assert len(cache) == _RECTIFICATION_CACHE_MAX_SIZE
+    assert list(cache) == list(range(3, _RECTIFICATION_CACHE_MAX_SIZE + 3))

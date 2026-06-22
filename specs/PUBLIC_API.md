@@ -40,23 +40,42 @@ The following imports are part of the lightweight public boundary:
 
 ```python
 import mq3drecon
-from mq3drecon import Depth2LinearConfig, FoundationStereoConfig, MQ3DReconError, PipelineConfigs, ProcessingError, ProjectPathConfig, ReconstructionConfig, Yuv2RgbConfig
-from mq3drecon import run_depth_to_linear, run_foundation_stereo_depth, run_reconstruct_scene, run_rgba_to_png, run_yuv_to_rgb
-from mq3drecon.config import Depth2LinearConfig, FoundationStereoConfig, PipelineConfigs, ProjectPathConfig, ReconstructionConfig, Yuv2RgbConfig
-from mq3drecon.dataio import DataIO, DepthDataIO, ImageDataIO, RGBDDataIO, ReconstructionDataIO
+from mq3drecon import Depth2LinearConfig, FoundationStereoConfig, MQ3DReconError, PipelineConfigs, ProcessingError, ProjectPathConfig, ReconstructionConfig, RgbImageStatus, Yuv2RgbConfig
+from mq3drecon import export_colmap_project, get_rgb_image_status, has_rgb_images, run_color_aligned_depth_to_png, run_depth_to_linear, run_foundation_stereo_depth, run_reconstruct_scene, run_rgba_to_png, run_visualize_camera_trajectories, run_yuv_to_rgb
+from mq3drecon.config import ColorAlignedDepthRenderingConfig, ColorOptimizationConfig, Depth2LinearConfig, DepthConfidenceEstimationConfig, FoundationStereoConfig, FragmentGenerationConfig, FragmentPoseRefinementConfig, IntegrationConfig, LegacyProjectLayout, PipelineConfigs, ProjectPathConfig, ReconstructionConfig, Yuv2RgbConfig
+from mq3drecon.dataio import CaptureBackend, DataIO, DepthDataIO, ImageDataIO, MRUKImageDataIO, MRUKIntrinsics, RGBDDataIO, ReconstructionDataIO, SessionInfo, load_session_info
 from mq3drecon.layouts import ColmapExportLayout, LegacyProjectLayout, PackageOutputLayout
 from mq3drecon.models import BaseTime, CameraCharacteristics, CameraDataset, ConfidenceMap, CoordinateSystem, DepthDataset, ImageFormatInfo, ImagePlaneInfo, Side, Transforms
 from mq3drecon.pipeline import PipelineProcessor
-from mq3drecon.processing.depth_conversion import convert_depth_directory
+from mq3drecon.processing.depth_conversion import ColorAlignedDepthPngExportResult, convert_depth_directory, export_color_aligned_depth_pngs, save_depth_preview_png, save_metric_depth_png
+from mq3drecon.processing.stereo_depth import StereoRectification, compute_stereo_rectification, inverse_rectify_left_depth, rectify_image
 from mq3drecon.processing.visualization import get_camera_visualization_lines, visualize_camera_trajectories
 from mq3drecon.processing.rgba_conversion import convert_rgba_directory
 from mq3drecon.processing.yuv_conversion import convert_yuv_directory
-from mq3drecon.workflows import RgbImageStatus, export_colmap_project, get_rgb_image_status, has_rgb_images, run_depth_to_linear, run_foundation_stereo_depth, run_rgba_to_png, run_yuv_to_rgb
+from mq3drecon.workflows import RgbImageStatus, export_colmap_project, get_rgb_image_status, has_rgb_images, run_color_aligned_depth_to_png, run_depth_to_linear, run_foundation_stereo_depth, run_reconstruct_scene, run_rgba_to_png, run_visualize_camera_trajectories, run_yuv_to_rgb
 ```
 
 Importing these modules must not require Open3D.
 
 ---
+
+
+# Rectified Stereo RGBD Loading
+
+`RGBDDataIO` exposes public loaders for FoundationStereo rectified stereo outputs:
+
+```python
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import Side
+
+data_io = DataIO(project_dir)
+color_dataset, depth_dataset = data_io.rgbd.build_rectified_stereo_rgbd_datasets(Side.LEFT)
+depth = data_io.rgbd.load_rectified_stereo_depth_by_index(Side.LEFT, depth_dataset, 0)
+rectification = data_io.rgbd.load_stereo_rectification()
+```
+
+The compatibility color-aligned depth loaders remain public for callers that need
+depth in the original left color coordinate system.
 
 # RGB Image Status Helpers
 
@@ -98,19 +117,50 @@ The explicit conversion workflows `run_yuv_to_rgb()` and `run_rgba_to_png()`
 remain available for batch PNG export, cache generation, inspection, and tools
 that require PNG files. They are not required before calling `load_rgb()`.
 
+# Compatibility Color-Aligned Depth Loading
+
+`RGBDDataIO` also remains the public reader for compatibility color-aligned depth maps. These maps are derived from stereo depth and expressed in the original LEFT color coordinate system. New geometry code should prefer the rectified stereo RGBD loaders above.
+
+```python
+from mq3drecon.dataio import DataIO
+from mq3drecon.models import Side
+
+data_io = DataIO(project_dir)
+color_dataset = data_io.color.load_color_dataset(Side.LEFT)
+depth_dataset = data_io.rgbd.build_color_aligned_depth_dataset(
+    side=Side.LEFT,
+    color_dataset=color_dataset,
+)
+depth = data_io.rgbd.load_color_aligned_depth_by_index(
+    side=Side.LEFT,
+    dataset=depth_dataset,
+    index=0,
+)
+```
+
+`load_color_aligned_depth_by_index()` must validate the loaded depth shape
+against the dataset frame resolution and return finite positive metric depth as
+`float32`, replacing invalid or non-positive values with zero.
+`load_color_aligned_depth(side, timestamp)` remains available for direct
+timestamp-based `.npy` loading.
+
+`build_color_aligned_rgbd_datasets()` returns color and compatibility color-aligned depth datasets filtered to the shared timestamp set. It is the preferred helper only for callers that explicitly need the original LEFT color coordinate system.
+
 # Conversion Workflow Configuration
 
 The public conversion workflows support lightweight typed configuration objects and internal defaults.
 
 ```python
 from mq3drecon.config import Depth2LinearConfig, Yuv2RgbConfig
-from mq3drecon.workflows import run_depth_to_linear, run_rgba_to_png, run_yuv_to_rgb
+from mq3drecon.workflows import run_color_aligned_depth_to_png, run_depth_to_linear, run_rgba_to_png, run_yuv_to_rgb
 
 run_yuv_to_rgb(project_dir)
 run_yuv_to_rgb(project_dir, config=Yuv2RgbConfig())
 run_yuv_to_rgb(project_dir, config_yml_path=config_yml_path)
 
 run_rgba_to_png(project_dir)
+
+run_color_aligned_depth_to_png(project_dir)
 
 run_depth_to_linear(project_dir)
 run_depth_to_linear(project_dir, config=Depth2LinearConfig())
@@ -178,3 +228,6 @@ Legacy modules under `scripts/` may re-export package APIs to preserve existing 
 Compatibility wrappers must not introduce new behavior that is unavailable from the package namespace.
 
 Misspelled legacy module names may remain as compatibility aliases, but new public package names must use corrected spelling.
+
+
+`ReconstructionConfig(depth_source="color_aligned")` remains accepted as a backward-compatible alias for the stereo-generated reconstruction path. New code should prefer `depth_source="rectified_stereo"`.

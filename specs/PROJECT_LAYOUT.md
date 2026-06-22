@@ -125,3 +125,20 @@ Misspelled legacy path helper names may remain as aliases only when needed for c
 Layout components should be lightweight and must not import heavy reconstruction dependencies such as Open3D.
 
 Layout components should be deterministic, testable, and safe to instantiate in environments without GPU or visualization support.
+
+
+# Rectified Stereo Artifacts
+
+FoundationStereo rectification writes native rectified stereo artifacts into the legacy project directory:
+
+```text
+left_rectified_stereo_color/
+right_rectified_stereo_color/
+left_rectified_stereo_depth/
+dataset/left_rectified_stereo_color_dataset.npz
+dataset/right_rectified_stereo_color_dataset.npz
+dataset/left_rectified_stereo_depth_dataset.npz
+dataset/stereo_rectification.npz
+```
+
+The existing `left_color_aligned_depth/` directory remains the compatibility output for depth mapped back to the original left color coordinate system.

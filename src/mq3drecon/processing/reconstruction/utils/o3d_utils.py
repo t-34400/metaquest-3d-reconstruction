@@ -118,9 +118,9 @@ def load_depth_map(
     depth_source: str = "quest",
     rgbd_data_io: RGBDDataIO | None = None,
 ) -> Optional[o3d.t.geometry.Image]:
-    if depth_source == "color_aligned":
+    if depth_source in ("color_aligned", "rectified_stereo"):
         if rgbd_data_io is None:
-            raise ValueError("rgbd_data_io is required when depth_source is color_aligned")
+            raise ValueError("rgbd_data_io is required when depth_source is color_aligned or rectified_stereo")
         depth_np = rgbd_data_io.load_color_aligned_depth_by_index(
             side=side,
             dataset=dataset,
@@ -139,7 +139,7 @@ def load_depth_map(
     if depth_np is None:
         return None
 
-    if use_confidence_filtered_depth and depth_source != "color_aligned":
+    if use_confidence_filtered_depth and depth_source not in ("color_aligned", "rectified_stereo"):
         confidence_map = depth_data_io.load_confidence_map(
             side=side,
             timestamp=dataset.timestamps[index]

@@ -97,6 +97,24 @@ class ImageDataIO:
         raise ValueError(f"Unsupported PNG image shape for {file_path}: {image.shape}")
 
 
+    def load_rectified_stereo_color_dataset(self, side: Side) -> CameraDataset:
+        path = self.image_path_config.get_rectified_stereo_color_dataset_path(side=side)
+        if not path.exists():
+            raise FileNotFoundError(f"Rectified stereo color dataset not found: {path}")
+        return CameraDataset.load(path)
+
+    def save_rectified_stereo_color_dataset(self, dataset: CameraDataset, side: Side) -> None:
+        dataset.save(self.image_path_config.get_rectified_stereo_color_dataset_path(side=side))
+
+    def save_rectified_stereo_rgb_image(self, image: np.ndarray, side: Side, timestamp: int) -> None:
+        path = self.image_path_config.get_rectified_stereo_color_path(side=side, timestamp=timestamp)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if image.ndim != 3 or image.shape[2] < 3:
+            raise ValueError(f"Expected rectified RGB image, got shape {image.shape}")
+        bgr = cv2.cvtColor(image[:, :, :3], cv2.COLOR_RGB2BGR)
+        if not cv2.imwrite(str(path), bgr):
+            raise IOError(f"Failed to write rectified stereo color image: {path}")
+
     def load_color_image(self, dataset: CameraDataset, index: int) -> np.ndarray:
         file_name = str(dataset.image_file_names[index])
         width = int(dataset.widths[index])

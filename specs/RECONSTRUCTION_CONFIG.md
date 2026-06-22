@@ -71,18 +71,26 @@ Supported values are:
 | Value | Meaning |
 | --- | --- |
 | `quest` | Use legacy Quest raw depth descriptors and raw depth maps. This is the default compatibility behavior. |
-| `color_aligned` | Use saved `.npy` color-aligned depth maps matched to the color dataset timestamps. |
+| `rectified_stereo` | Use saved FoundationStereo-generated rectified stereo RGBD artifacts. This is the preferred stereo-generated reconstruction mode. |
+| `color_aligned` | Backward-compatible alias for the stereo-generated reconstruction path. Rectified stereo RGBD is preferred when available; compatibility color-aligned depth is the fallback. |
 
-The `color_aligned` source is intended for generated depth maps such as
-FoundationStereo output. It must not require raw Quest depth files.
+The `rectified_stereo` source is intended for generated stereo depth maps such as FoundationStereo output. `color_aligned` is retained only for compatibility with existing configuration files and currently selects the same stereo-generated reconstruction path. New configs should prefer `rectified_stereo`. Neither stereo-generated source requires raw Quest depth files.
 
-# Color-Aligned RGBD Reconstruction
+# Stereo-Generated RGBD Reconstruction
 
-When `depth_source` is `color_aligned`, reconstruction must integrate the LEFT
-color image and LEFT color-aligned depth map as RGBD frames directly. This path
+When `depth_source` is `rectified_stereo` or the legacy alias `color_aligned`, reconstruction must prefer saved LEFT rectified stereo RGBD frames when they are available. If rectified stereo RGBD artifacts are absent, it must integrate the LEFT color image and LEFT color-aligned depth map as RGBD frames directly. This path
 must not require RIGHT color images, raw Quest depth files, Quest depth pose
 optimization, Quest depth confidence estimation, color map optimization, or
 color-aligned depth rendering.
 
-The color-aligned RGBD path must treat saved color-aligned depth maps as the
-selected depth source and must not render over them as an intermediate output.
+The stereo-generated RGBD path must treat saved rectified stereo depth maps, or saved compatibility color-aligned depth maps when rectified stereo depth is unavailable, as the selected depth source and must not render over them as an intermediate output.
+
+# TSDF Mesh Extraction
+
+Reconstruction paths that extract triangle meshes from Open3D `VoxelBlockGrid`
+objects should preserve the configured TSDF integration resolution by default.
+
+When CUDA mesh extraction fails because Open3D cannot allocate the Marching
+Cubes assistance mesh structure, reconstruction should retry mesh extraction on
+CPU instead of requiring users to reduce reconstruction resolution first. Other
+mesh extraction failures must continue to propagate to callers.

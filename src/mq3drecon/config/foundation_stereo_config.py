@@ -22,6 +22,9 @@ class FoundationStereoConfig:
     max_pair_timestamp_delta_us: int | None = None
     output_sides: tuple[Side, ...] = field(default_factory=lambda: (Side.LEFT,))
     save_rgba_png: bool = False
+    save_color_aligned_depth: bool = True
+    cache_rectification_maps: bool = True
+    skip_existing_outputs: bool = True
     save_depth_png: bool = False
     depth_png_scale: float = 1000.0
     save_depth_preview_png: bool = False
@@ -30,7 +33,9 @@ class FoundationStereoConfig:
 
     def __post_init__(self) -> None:
         if tuple(self.output_sides) != (Side.LEFT,):
-            raise ValueError("FoundationStereo depth generation supports only left color-aligned depth output")
+            raise ValueError("FoundationStereo depth generation supports only left rectified stereo depth output")
+        if (self.save_depth_png or self.save_depth_preview_png) and not self.save_color_aligned_depth:
+            raise ValueError("FoundationStereo depth PNG export requires save_color_aligned_depth=True")
 
     @staticmethod
     def parse(config: dict[str, Any]) -> "FoundationStereoConfig":

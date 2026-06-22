@@ -104,6 +104,28 @@ COLOR_ALIGNED_DEPTH_PREVIEW_PNG_DIR_MAP = {
     Side.RIGHT: "right_color_aligned_depth_preview_png",
 }
 
+RECTIFIED_STEREO_COLOR_DIR_MAP = {
+    Side.LEFT: "left_rectified_stereo_color",
+    Side.RIGHT: "right_rectified_stereo_color",
+}
+
+RECTIFIED_STEREO_COLOR_DATASET_NPZ_MAP = {
+    Side.LEFT: "dataset/left_rectified_stereo_color_dataset.npz",
+    Side.RIGHT: "dataset/right_rectified_stereo_color_dataset.npz",
+}
+
+RECTIFIED_STEREO_DEPTH_DIR_MAP = {
+    Side.LEFT: "left_rectified_stereo_depth",
+    Side.RIGHT: "right_rectified_stereo_depth",
+}
+
+RECTIFIED_STEREO_DEPTH_DATASET_NPZ_MAP = {
+    Side.LEFT: "dataset/left_rectified_stereo_depth_dataset.npz",
+    Side.RIGHT: "dataset/right_rectified_stereo_depth_dataset.npz",
+}
+
+STEREO_RECTIFICATION_NPZ_PATH = "dataset/stereo_rectification.npz"
+
 CACHE_DIR_PATH = "cache"
 FRAGMENT_DATASET_CACHE_DIR_PATH = f"{CACHE_DIR_PATH}/dataset"
 FRAGMENT_PCD_CACHE_DIR_PATH = f"{CACHE_DIR_PATH}/pcd"
@@ -176,6 +198,15 @@ class ImagePathConfig:
     def get_optimized_color_dataset_path(self, side: Side) -> Path:
         return self.project_dir / OPTIMIZED_COLOR_DATASET_NPZ_MAP[side]
 
+    def get_rectified_stereo_color_dir(self, side: Side) -> Path:
+        return self.project_dir / RECTIFIED_STEREO_COLOR_DIR_MAP[side]
+
+    def get_rectified_stereo_color_path(self, side: Side, timestamp: int) -> Path:
+        return self.get_rectified_stereo_color_dir(side=side) / f"{timestamp}.png"
+
+    def get_rectified_stereo_color_dataset_path(self, side: Side) -> Path:
+        return self.project_dir / RECTIFIED_STEREO_COLOR_DATASET_NPZ_MAP[side]
+
     def get_relative_path(self, path: Path) -> Path:
         return Path(path).relative_to(self.project_dir)
 
@@ -242,6 +273,21 @@ class RGBDPathConfig:
 
     def get_color_aligned_depth_preview_png_path(self, side: Side, timestamp: int) -> Path:
         return self.get_color_aligned_depth_preview_png_dir(side=side) / f"{timestamp}.png"
+
+    def get_rectified_stereo_depth_filename(self, timestamp: int) -> str:
+        return f"{timestamp}.npy"
+
+    def get_rectified_stereo_depth_dir(self, side: Side) -> Path:
+        return self.project_dir / RECTIFIED_STEREO_DEPTH_DIR_MAP[side]
+
+    def get_rectified_stereo_depth_path(self, side: Side, timestamp: int) -> Path:
+        return self.get_rectified_stereo_depth_dir(side=side) / self.get_rectified_stereo_depth_filename(timestamp)
+
+    def get_rectified_stereo_depth_dataset_path(self, side: Side) -> Path:
+        return self.project_dir / RECTIFIED_STEREO_DEPTH_DATASET_NPZ_MAP[side]
+
+    def get_stereo_rectification_path(self) -> Path:
+        return self.project_dir / STEREO_RECTIFICATION_NPZ_PATH
 
 
 class ReconstructionPathConfig:

@@ -12,7 +12,7 @@ depth_to_linear:
 
 reconstruction:
   device: "CUDA:0"  # Device to run Open3D Tensor operations (e.g., CUDA-enabled GPU)
-  depth_source: "quest"  # Use "quest" for raw Quest depth or "color_aligned" for saved *.npy depth maps
+  depth_source: "quest"  # Use "quest" for raw Quest depth, "rectified_stereo" for FoundationStereo, or "color_aligned" as a legacy alias
 
   # pipeline
   use_dataset_cache: true  # Use preprocessed depth/color datasets if available
