@@ -142,7 +142,7 @@ def reconstruct_tiled_rgbd_scene(
     tile_dir = data_io.reconstruction.reconstruction_path_config.get_tiled_tsdf_mesh_dir()
     tile_dir.mkdir(parents=True, exist_ok=True)
 
-    for tile in tqdm(tiles, desc="[LEFT] Integrating tiled stereo RGBD frames ..."):
+    for tile_number, tile in enumerate(tiles, start=1):
         candidate_indices = _select_candidate_frames(depth_dataset, tile, integration_config.depth_max)
         if not candidate_indices:
             skipped_tile_count += 1
@@ -151,51 +151,67 @@ def reconstruct_tiled_rgbd_scene(
         vbg = make_color_tsdf_vbg(integration_config=integration_config, device=device)
         integrated_frame_count = 0
         integrated_block_count = 0
-        for frame_index in candidate_indices:
-            color, depth = load_rgbd_images(
-                data_io=data_io,
-                color_dataset=color_dataset,
-                depth_dataset=depth_dataset,
-                index=frame_index,
-                device=device,
-                depth_kind=depth_kind,
-            )
-            intrinsic = o3d.core.Tensor(intrinsic_matrices[frame_index], dtype=o3d.core.Dtype.Float64)
-            extrinsic = o3d.core.Tensor(extrinsic_wc[frame_index], dtype=o3d.core.Dtype.Float64)
-            block_count = integrate_rgbd_frame(
-                vbg=vbg,
-                color=color,
-                depth=depth,
-                intrinsic=intrinsic,
-                extrinsic=extrinsic,
-                depth_max=integration_config.depth_max,
-                trunc_voxel_multiplier=integration_config.trunc_voxel_multiplier,
-                voxel_size=integration_config.voxel_size,
-                block_resolution=integration_config.block_resolution,
-                block_min_bound=tile.expanded_min_bound,
-                block_max_bound=tile.expanded_max_bound,
-            )
-            if block_count > 0:
-                integrated_frame_count += 1
-                integrated_block_count += block_count
+        tile_desc = f"[LEFT] Tile {tile_number}/{len(tiles)} {tile.index}"
+        with tqdm(candidate_indices, desc=tile_desc, unit="frame", leave=True) as frame_bar:
+            for frame_index in frame_bar:
+                color, depth = load_rgbd_images(
+                    data_io=data_io,
+                    color_dataset=color_dataset,
+                    depth_dataset=depth_dataset,
+                    index=frame_index,
+                    device=device,
+                    depth_kind=depth_kind,
+                )
+                intrinsic = o3d.core.Tensor(intrinsic_matrices[frame_index], dtype=o3d.core.Dtype.Float64)
+                extrinsic = o3d.core.Tensor(extrinsic_wc[frame_index], dtype=o3d.core.Dtype.Float64)
+                block_count = integrate_rgbd_frame(
+                    vbg=vbg,
+                    color=color,
+                    depth=depth,
+                    intrinsic=intrinsic,
+                    extrinsic=extrinsic,
+                    depth_max=integration_config.depth_max,
+                    trunc_voxel_multiplier=integration_config.trunc_voxel_multiplier,
+                    voxel_size=integration_config.voxel_size,
+                    block_resolution=integration_config.block_resolution,
+                    block_min_bound=tile.expanded_min_bound,
+                    block_max_bound=tile.expanded_max_bound,
+                )
+                if block_count > 0:
+                    integrated_frame_count += 1
+                    integrated_block_count += block_count
+                frame_bar.set_postfix(
+                    integrated=integrated_frame_count,
+                    blocks=integrated_block_count,
+                    refresh=False,
+                )
 
         if integrated_block_count == 0:
             skipped_tile_count += 1
+            tqdm.write(
+                f"[Info] Tile {tile_number}/{len(tiles)} {tile.index}: "
+                f"candidates={len(candidate_indices)}, integrated_frames=0, blocks=0, skipped"
+            )
             continue
 
         tile_mesh = extract_triangle_mesh_with_cpu_fallback(vbg).to_legacy()
         tile_mesh = _crop_legacy_mesh_to_aabb(tile_mesh, tile)
         if len(tile_mesh.triangles) == 0:
             skipped_tile_count += 1
+            tqdm.write(
+                f"[Info] Tile {tile_number}/{len(tiles)} {tile.index}: "
+                f"candidates={len(candidate_indices)}, integrated_frames={integrated_frame_count}, "
+                f"blocks={integrated_block_count}, triangles=0, skipped"
+            )
             continue
 
         tile_path = data_io.reconstruction.reconstruction_path_config.get_tiled_tsdf_mesh_path(*tile.index)
         _save_tile_mesh(tile_mesh, tile_path)
         merged_mesh += tile_mesh
         non_empty_tile_count += 1
-        print(
-            "[Info] Tiled TSDF tile "
-            f"{tile.index}: candidates={len(candidate_indices)}, integrated_frames={integrated_frame_count}, "
+        tqdm.write(
+            f"[Info] Tile {tile_number}/{len(tiles)} {tile.index}: "
+            f"candidates={len(candidate_indices)}, integrated_frames={integrated_frame_count}, "
             f"blocks={integrated_block_count}, triangles={len(tile_mesh.triangles)}"
         )
 
