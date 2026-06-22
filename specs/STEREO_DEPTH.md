@@ -103,11 +103,11 @@ The workflow writes native rectified `.npy` depth maps through `RGBDDataIO.save_
 
 When `FoundationStereoConfig.save_rgba_png` is enabled, the workflow also writes decoded color-frame PNG files for inspection. For MRUK `.rgba` inputs, these PNG files must reflect the same decoded and vertically oriented image array used by stereo inference.
 
-When `FoundationStereoConfig.save_depth_png` is enabled, the workflow also writes generated color-aligned depth as 16-bit PNG files using `depth_png_scale` units per meter. Invalid or non-positive depth values must be written as zero.
+When `FoundationStereoConfig.save_depth_png` is enabled, the workflow also writes generated compatibility color-aligned depth as 16-bit PNG files using `depth_png_scale` units per meter. Invalid or non-positive depth values must be written as zero.
 
-When `FoundationStereoConfig.save_depth_preview_png` is enabled, the workflow also writes generated color-aligned depth as 8-bit preview PNG files for visual inspection. Preview values must be normalized linearly from `depth_preview_min_m` to `depth_preview_max_m` when a maximum is configured. If the preview maximum is not configured, the workflow may use a finite positive depth percentile or another deterministic fallback suitable for visualization. Invalid or non-positive depth values must be written as zero.
+When `FoundationStereoConfig.save_depth_preview_png` is enabled, the workflow also writes generated compatibility color-aligned depth as 8-bit preview PNG files for visual inspection. Preview values must be normalized linearly from `depth_preview_min_m` to `depth_preview_max_m` when a maximum is configured. If the preview maximum is not configured, the workflow may use a finite positive depth percentile or another deterministic fallback suitable for visualization. Invalid or non-positive depth values must be written as zero.
 
-Saved `.npy` color-aligned depth maps may also be exported to PNG files after generation through the package workflow `run_color_aligned_depth_to_png` or the CLI command `color-aligned-depth-to-png`. Post-hoc metric PNG export must use the same 16-bit scaling rule as generated metric PNG output. Post-hoc preview export must use the same 8-bit normalization and invalid-depth handling as generated preview PNG output.
+Saved `.npy` compatibility color-aligned depth maps may also be exported to PNG files after generation through the package workflow `run_color_aligned_depth_to_png` or the CLI command `color-aligned-depth-to-png`. Post-hoc metric PNG export must use the same 16-bit scaling rule as generated metric PNG output. Post-hoc preview export must use the same 8-bit normalization and invalid-depth handling as generated preview PNG output.
 
 Legacy output directories are:
 

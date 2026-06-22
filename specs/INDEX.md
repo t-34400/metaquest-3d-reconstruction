@@ -158,7 +158,7 @@ Read when changing:
 * FoundationStereo ONNX inference behavior
 * stereo color frame pairing
 * disparity-to-depth conversion
-* color-aligned depth output produced from stereo images
+* rectified stereo depth output and compatibility color-aligned depth output produced from stereo images
 * stereo optional dependency boundaries
 
 Related tests: `tests/test_foundation_stereo_workflow.py`, `tests/test_packaging_metadata.py`, `tests/test_public_api_imports.py`.

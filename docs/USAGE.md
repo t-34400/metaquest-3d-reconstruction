@@ -40,7 +40,7 @@ The CLI accepts both kebab-case and legacy underscore forms for the project and 
 
 ## Common command sequences
 
-### Generate FoundationStereo color-aligned depth
+### Generate FoundationStereo rectified stereo depth
 
 ```bash
 mq3drecon foundation-stereo-depth \
@@ -50,13 +50,25 @@ mq3drecon foundation-stereo-depth \
 
 The FoundationStereo workflow reads color frames through the backend-aware color dataset API. It works with legacy Camera2 captures and MRUK captures without requiring a separate YUV or RGBA-to-PNG conversion step.
 
-The workflow writes left-view color-aligned depth maps:
+The workflow rectifies the left/right color frames before inference and writes the primary stereo outputs in rectified stereo coordinates:
+
+```text
+left_rectified_stereo_color/*.png
+right_rectified_stereo_color/*.png
+left_rectified_stereo_depth/*.npy
+dataset/left_rectified_stereo_color_dataset.npz
+dataset/right_rectified_stereo_color_dataset.npz
+dataset/left_rectified_stereo_depth_dataset.npz
+dataset/stereo_rectification.npz
+```
+
+For compatibility with older tooling, it also writes depth mapped back to the original LEFT color coordinate system:
 
 ```text
 left_color_aligned_depth/*.npy
 ```
 
-Optional config flags can also write decoded color PNGs, 16-bit metric depth PNGs, and 8-bit preview PNGs for inspection. Saved `.npy` depth maps can also be exported later:
+Optional config flags can also write decoded color PNGs, 16-bit metric depth PNGs, and 8-bit preview PNGs for inspecting the compatibility color-aligned depth maps. Saved compatibility `.npy` depth maps can also be exported later:
 
 ```bash
 mq3drecon color-aligned-depth-to-png \
@@ -92,7 +104,7 @@ mq3drecon reconstruct \
   --config path/to/config.yml
 ```
 
-When `depth_source: color_aligned` is selected, reconstruction integrates LEFT RGB frames with LEFT color-aligned depth maps directly. Quest depth confidence estimation, Quest depth pose optimization, and color-aligned depth rendering are skipped for this depth source.
+When `depth_source: color_aligned` is selected, reconstruction first looks for LEFT rectified stereo RGBD artifacts and integrates those with rectified intrinsics. If rectified stereo artifacts are absent, it falls back to the compatibility LEFT color-aligned depth maps and original LEFT color frames. Quest depth confidence estimation, Quest depth pose optimization, and color-aligned depth rendering are skipped for this depth source.
 
 ### Export a COLMAP project
 
@@ -282,7 +294,7 @@ z: forward
 
 ### Load Quest depth maps and confidence maps
 
-Use `data_io.depth` for Quest-native depth frames. These depth maps use the native depth capture layout and are separate from stereo-generated color-aligned depth.
+Use `data_io.depth` for Quest-native depth frames. These depth maps use the native depth capture layout and are separate from stereo-generated rectified stereo depth and compatibility color-aligned depth.
 
 ```python
 from pathlib import Path
@@ -312,9 +324,9 @@ if confidence is not None:
     print(confidence.valid_count)
 ```
 
-### Load color-aligned depth maps
+### Load rectified stereo depth maps
 
-Use `data_io.rgbd` for stereo-generated `.npy` depth maps such as FoundationStereo outputs under `left_color_aligned_depth/`. The dataset is built from an existing color dataset so timestamps, intrinsics, image sizes, and poses remain aligned with the color frames.
+Use the rectified stereo loaders for the primary FoundationStereo outputs. These datasets preserve the rectified stereo image coordinates and the rectified intrinsics used to convert disparity into metric depth.
 
 ```python
 from pathlib import Path
@@ -326,43 +338,52 @@ project_dir = Path("data/projects/test")
 data_io = DataIO(project_dir=project_dir)
 side = Side.LEFT
 
-color_dataset = data_io.color.load_color_dataset(side)
-depth_dataset = data_io.rgbd.build_color_aligned_depth_dataset(
-    side=side,
-    color_dataset=color_dataset,
-)
+color_dataset, depth_dataset = data_io.rgbd.build_rectified_stereo_rgbd_datasets(side=side)
 
-depth = data_io.rgbd.load_color_aligned_depth_by_index(
+index = 0
+rgb = data_io.color.load_color_rgb_image(color_dataset, index=index)
+depth = data_io.rgbd.load_rectified_stereo_depth_by_index(
     side=side,
     dataset=depth_dataset,
-    index=0,
+    index=index,
 )
-timestamp = int(depth_dataset.timestamps[0])
-same_depth = data_io.rgbd.load_color_aligned_depth(side, timestamp)
+rectification = data_io.rgbd.load_stereo_rectification()
 
+print(rgb.shape)
 print(depth.shape)
 print(depth.dtype)
-print(same_depth.shape)
+print(rectification.left_projection.shape)
 ```
 
-`load_color_aligned_depth_by_index()` validates that the loaded array shape matches the dataset image size and returns finite positive metric depth as `float32`, with invalid values set to zero. `load_color_aligned_depth()` loads the saved `.npy` array for a timestamp directly.
+`load_rectified_stereo_depth_by_index()` validates that the loaded array shape matches the rectified depth dataset image size and returns finite positive metric depth as `float32`, with invalid values set to zero. `build_rectified_stereo_rgbd_datasets()` returns rectified color and depth datasets filtered to the shared timestamp set.
 
-When iterating over RGBD frames, use the paired dataset helper so color and depth datasets contain exactly the same timestamps:
+### Load compatibility color-aligned depth maps
+
+Use the color-aligned loaders only when downstream code expects depth in the original LEFT color coordinate system. These maps are derived compatibility artifacts, not the primary FoundationStereo reconstruction input.
 
 ```python
-color_rgbd_dataset, depth_dataset = data_io.rgbd.build_color_aligned_rgbd_datasets(
+source_color_dataset = data_io.color.load_color_dataset(Side.LEFT)
+color_dataset, depth_dataset = data_io.rgbd.build_color_aligned_rgbd_datasets(
     side=Side.LEFT,
-    color_dataset=color_dataset,
+    color_dataset=source_color_dataset,
 )
 
 index = 0
-rgb = data_io.color.load_color_rgb_image(color_rgbd_dataset, index=index)
+rgb = data_io.color.load_color_rgb_image(color_dataset, index=index)
 depth = data_io.rgbd.load_color_aligned_depth_by_index(
     side=Side.LEFT,
     dataset=depth_dataset,
     index=index,
 )
+timestamp = int(depth_dataset.timestamps[index])
+same_depth = data_io.rgbd.load_color_aligned_depth(Side.LEFT, timestamp)
+
+print(rgb.shape)
+print(depth.shape)
+print(same_depth.shape)
 ```
+
+`load_color_aligned_depth_by_index()` validates that the loaded array shape matches the compatibility dataset image size and returns finite positive metric depth as `float32`, with invalid values set to zero.
 
 ### Run workflows from Python
 
@@ -463,47 +484,5 @@ from mq3drecon.workflows import (
     run_rgba_to_png,
     run_visualize_camera_trajectories,
     run_yuv_to_rgb,
-)
-```
-
-
-## Rectified stereo depth loading
-
-FoundationStereo output is saved first in rectified stereo coordinates. Use the
-rectified stereo loaders when feeding the generated depth into geometry code. The
-legacy color-aligned depth loaders remain available for compatibility and
-inspection in the original left color coordinate system.
-
-```python
-from mq3drecon.dataio import DataIO
-from mq3drecon.models import Side
-
-data_io = DataIO(project_dir)
-
-rectified_color_dataset, rectified_depth_dataset = data_io.rgbd.build_rectified_stereo_rgbd_datasets(
-    Side.LEFT,
-)
-rectified_color = data_io.color.load_color_rgb_image(rectified_color_dataset, 0)
-rectified_depth = data_io.rgbd.load_rectified_stereo_depth_by_index(
-    Side.LEFT,
-    rectified_depth_dataset,
-    0,
-)
-rectification = data_io.rgbd.load_stereo_rectification()
-```
-
-For compatibility with older processing that expects original left color
-coordinates:
-
-```python
-source_color_dataset = data_io.color.load_color_dataset(Side.LEFT)
-color_dataset, depth_dataset = data_io.rgbd.build_color_aligned_rgbd_datasets(
-    Side.LEFT,
-    source_color_dataset,
-)
-color_aligned_depth = data_io.rgbd.load_color_aligned_depth_by_index(
-    Side.LEFT,
-    depth_dataset,
-    0,
 )
 ```

@@ -117,12 +117,9 @@ The explicit conversion workflows `run_yuv_to_rgb()` and `run_rgba_to_png()`
 remain available for batch PNG export, cache generation, inspection, and tools
 that require PNG files. They are not required before calling `load_rgb()`.
 
-# Color-Aligned Depth Loading
+# Compatibility Color-Aligned Depth Loading
 
-`RGBDDataIO` is the public reader for saved color-aligned depth maps such as
-FoundationStereo outputs. Callers must build the color-aligned depth dataset from
-the matching color dataset so timestamps, intrinsics, image sizes, and poses stay
-aligned with the color camera frames.
+`RGBDDataIO` also remains the public reader for compatibility color-aligned depth maps. These maps are derived from stereo depth and expressed in the original LEFT color coordinate system. New geometry code should prefer the rectified stereo RGBD loaders above.
 
 ```python
 from mq3drecon.dataio import DataIO
@@ -147,9 +144,7 @@ against the dataset frame resolution and return finite positive metric depth as
 `load_color_aligned_depth(side, timestamp)` remains available for direct
 timestamp-based `.npy` loading.
 
-`build_color_aligned_rgbd_datasets()` returns color and color-aligned depth
-datasets filtered to the shared timestamp set and is the preferred helper for
-callers that iterate RGBD frames in dataset order.
+`build_color_aligned_rgbd_datasets()` returns color and compatibility color-aligned depth datasets filtered to the shared timestamp set. It is the preferred helper only for callers that explicitly need the original LEFT color coordinate system.
 
 # Conversion Workflow Configuration
 
