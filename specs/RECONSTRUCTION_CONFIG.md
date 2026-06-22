@@ -85,6 +85,21 @@ color-aligned depth rendering.
 
 The stereo-generated RGBD path must treat saved rectified stereo depth maps, or saved compatibility color-aligned depth maps when rectified stereo depth is unavailable, as the selected depth source and must not render over them as an intermediate output.
 
+
+# Example Pipeline Configuration Files
+
+Example YAML files should be organized around the user's selected depth source.
+The Quest raw-depth example pipeline may include raw-depth conversion, confidence
+estimation, fragment generation, depth-pose refinement, color optimization, and
+color-aligned depth rendering settings.
+
+The stereo example pipeline should contain the FoundationStereo generation section
+and a reconstruction section with `depth_source: rectified_stereo`. It must not
+carry Quest raw-depth-only conversion or optimization sections just to satisfy old
+unified-pipeline structure. Reconstruction subconfigs omitted from the stereo
+example are supplied by `ReconstructionConfig` defaults and are ignored when their
+parent stereo-incompatible steps are disabled.
+
 # TSDF Mesh Extraction
 
 Reconstruction paths that extract triangle meshes from Open3D `VoxelBlockGrid`

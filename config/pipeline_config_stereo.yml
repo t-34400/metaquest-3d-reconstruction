@@ -19,18 +19,6 @@ foundation_stereo:
   depth_preview_min_m: 0.1
   depth_preview_max_m: 5.0
 
-yuv_to_rgb:
-  blur_filter: false
-  blur_threshold: 50.0
-  exposure_filter: false
-  exposure_threshold_low: 0.05
-  exposure_threshold_high: 0.05
-
-depth_to_linear:
-  clip_near_m: 0.1
-  clip_far_m: 10.0
-  use_cache: true
-
 reconstruction:
   device: "CUDA:0"
   depth_source: "rectified_stereo"
@@ -48,51 +36,6 @@ reconstruction:
   points_per_vertex_ratio: 2.0
   render_color_aligned_depth: false
 
-  confidence_estimation:
-    target_frame_range: 10
-    depth_max: 10.0
-    error_threshold: 0.05
-    skip_if_output_dir_exists: true
-    use_multi_threading: true
-
-  fragment_generation:
-    fragment_size: 100
-    use_confidence_filtered_depth: false
-    confidence_threshold: 0.0
-    valid_count_threshold: 1
-    depth_max: 10.0
-    odometry_loop_interval: 10
-    overlap_ratio_threshold: 0.1
-    loop_yaw_info_density_threshold: 0.3
-    dist_threshold: 0.07
-    edge_prune_threshold: 0.25
-    use_multi_threading: false
-
-  fragment_pose_refinement:
-    use_confidence_filtered_depth: false
-    confidence_threshold: 0.0
-    valid_count_threshold: 1
-    voxel_size: 0.01
-    block_resolution: 16
-    block_count: 50000
-    depth_max: 10.0
-    trunc_voxel_multiplier: 8.0
-    use_pre_filtering: true
-    pre_filter_every_k_points: 30
-    pre_filter_max_corr_dist: 0.1
-    pre_filter_inlier_rmse_threshold: 0.05
-    pre_filter_fitness_threshold: 0.2
-    icp_voxel_sizes: [0.05, 0.025, 0.0125]
-    max_corr_dists: [0.1, 0.05, 0.025]
-    max_iterations: [50, 31, 14]
-    relative_fitnesses: [1e-6, 1e-6, 1e-6]
-    relative_rmses: [1e-6, 1e-6, 1e-6]
-    icp_fitness_threshold: 0.2
-    icp_inlier_rmse_threshold: 0.05
-    dist_threshold: 0.07
-    edge_prune_threshold: 0.25
-    use_multi_threading: false
-
   depth_integration:
     use_confidence_filtered_depth: false
     confidence_threshold: 0.0
@@ -109,8 +52,3 @@ reconstruction:
     interval: 100
     max_iteration: 100
     use_dataset_cache: false
-
-  color_aligned_depth_rendering:
-    weight_threshold: 1.0
-    estimated_vertex_number: -1
-    only_use_optimized_dataset: true

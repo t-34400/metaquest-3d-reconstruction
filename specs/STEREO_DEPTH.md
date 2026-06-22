@@ -132,6 +132,16 @@ The saved depth map timestamp must match the paired left color frame timestamp.
 
 ---
 
+
+# Example Pipeline Configuration
+
+The FoundationStereo example pipeline config may combine `foundation_stereo` and
+`reconstruction` sections because stereo depth generation and rectified-stereo
+reconstruction are the common offline pipeline pair. That example should not
+include Quest raw-depth conversion, Quest depth confidence estimation, Quest depth
+pose optimization, or color-aligned depth rendering settings unless those steps
+become part of a documented stereo workflow.
+
 # Dependency Boundary
 
 `onnxruntime` is an optional stereo dependency.
