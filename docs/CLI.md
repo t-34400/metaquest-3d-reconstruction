@@ -180,9 +180,21 @@ right_camera_mruk_rgba_png/
 
 `color-aligned-depth-to-png` writes saved color-aligned `.npy` depth maps as 8-bit preview PNGs by default. Use `--metric` to also write 16-bit metric PNGs.
 
-### Run the repository example script
+### Run the repository example scripts
 
-The repository includes a convenience script that runs package CLI commands against a capture directory and writes generated exports under a separate output root:
+For the recommended MRUK or legacy Camera2 stereo workflow, use the FoundationStereo example script. It runs stereo depth generation, reconstructs from the rectified stereo RGBD outputs by default, and exports a COLMAP project under a separate output root:
+
+```bash
+examples/run_foundation_stereo_pipeline.sh \
+  path/to/project \
+  path/to/output/root \
+  path/to/foundation_stereo.onnx \
+  config/pipeline_config_stereo.yml
+```
+
+The fourth argument is optional and defaults to `config/pipeline_config_stereo.yml`. Set `RUN_RECONSTRUCT=0` to skip Open3D reconstruction, `RUN_EXPORT_COLMAP=0` to skip COLMAP export, or `RUN_VISUALIZE=1` to open the camera trajectory viewer after processing.
+
+The repository also keeps a legacy/simple export helper:
 
 ```bash
 examples/run_mq3drecon_pipeline.sh \
@@ -190,8 +202,7 @@ examples/run_mq3drecon_pipeline.sh \
   path/to/output/root
 ```
 
-For MRUK captures without depth frames, the script skips YUV and depth conversion, then exports the color camera dataset to a COLMAP project. Set `RUN_RECONSTRUCT=1` to run Open3D reconstruction when usable depth inputs are available, and set `RUN_VISUALIZE=1` to open the camera trajectory viewer.
-
+That script is mainly for NativeCamera2 YUV conversion, Quest raw-depth conversion, and COLMAP export workflows. It does not run `foundation-stereo-depth`. For MRUK captures without Quest depth frames, it skips YUV and depth conversion, then exports the color camera dataset to a COLMAP project.
 
 ## High-resolution rectified-stereo TSDF
 
