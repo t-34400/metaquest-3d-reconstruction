@@ -1,6 +1,6 @@
 # Installation
 
-This document describes how to install MQ3DRecon for package use, local development, and optional runtime features.
+This document describes how to install MQ3DRecon from a source checkout for package use, local development, and optional runtime features.
 
 ## Requirements
 
@@ -8,39 +8,53 @@ MQ3DRecon requires Python 3.10 or newer.
 
 The default package profile is lightweight. It supports configuration, project layout helpers, domain models, data I/O APIs, conversion workflows, and COLMAP export module imports without requiring Open3D.
 
-## Install from PyPI
+## Install from source
 
-Install the lightweight package:
+MQ3DRecon is not published to PyPI yet. Install it from a cloned repository.
+
+Clone the repository and enter the project root:
 
 ```bash
-pip install mq3drecon
+git clone https://github.com/t-34400/metaquest-3d-reconstruction.git
+cd metaquest-3d-reconstruction
+```
+
+Create and activate a virtual environment:
+
+```bash
+uv venv --python 3.10
+source .venv/bin/activate
+```
+
+Install the lightweight package from the local checkout:
+
+```bash
+uv pip install .
 ```
 
 Install the full toolkit when you need reconstruction, stereo depth generation, and visualization-related optional dependencies:
 
 ```bash
-pip install "mq3drecon[full]"
+uv pip install ".[full]"
 ```
 
 Use the stereo extra when you only need ONNX-backed FoundationStereo depth generation in addition to the lightweight package:
 
 ```bash
-pip install "mq3drecon[stereo]"
+uv pip install ".[stereo]"
 ```
 
 Use the reconstruction extra when you need Open3D-backed reconstruction:
 
 ```bash
-pip install "mq3drecon[reconstruction]"
+uv pip install ".[reconstruction]"
 ```
 
-## Local development install
+## Editable development install
 
-For development from a cloned repository, create an environment and install the package in editable mode:
+For development from a cloned repository, install the package in editable mode:
 
 ```bash
-uv venv --python 3.10
-source .venv/bin/activate
 uv pip install -e .
 ```
 
@@ -68,9 +82,9 @@ The default install intentionally does not require Open3D. This keeps lightweigh
 
 ## CUDA, Open3D, and ONNX Runtime notes
 
-Open3D is only required for reconstruction workflows. Install `mq3drecon[reconstruction]` or `mq3drecon[full]` before running Open3D-backed reconstruction commands.
+Open3D is only required for reconstruction workflows. Install `.[reconstruction]` or `.[full]` before running Open3D-backed reconstruction commands.
 
-ONNX Runtime is only required for FoundationStereo ONNX inference. Install `mq3drecon[stereo]` or `mq3drecon[full]` before running stereo depth generation.
+ONNX Runtime is only required for FoundationStereo ONNX inference. Install `.[stereo]` or `.[full]` before running stereo depth generation.
 
 The `stereo` extra installs `onnxruntime`. For GPU execution, install an ONNX Runtime package that matches your CUDA environment, such as `onnxruntime-gpu`, following the ONNX Runtime compatibility requirements for your system.
 
@@ -130,4 +144,4 @@ print(PipelineConfigs())
 PY
 ```
 
-For CLI and API examples, see [USAGE.md](USAGE.md).
+For command-line examples, see [CLI.md](CLI.md). For public Python API examples, see [API.md](API.md). For dataset conventions, see [DATA_FORMAT.md](DATA_FORMAT.md).

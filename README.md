@@ -17,20 +17,21 @@ Supported workflows:
 - Legacy capture datasets
 - MRUK capture datasets
 - Quest native depth reconstruction
-- FoundationStereo / Fast-FoundationStereo depth reconstruction
+- FoundationStereo depth reconstruction
+- Fast-FoundationStereo depth reconstruction
 - COLMAP export workflows
 
 ---
 
 ## Quick Install
 
-Install the full package:
+Install the full package from source:
 
 ```bash
 uv pip install -e ".[full]"
 ```
 
-For installation profiles, runtime requirements, and development setup, see:
+For installation requirements, optional dependencies, and development setup, see:
 
 - [Installation Guide](docs/INSTALLATION.md)
 
@@ -53,13 +54,15 @@ mq3drecon reconstruct \
   --project-dir path/to/project
 ```
 
-For complete CLI and API examples, see:
+For additional command-line examples and command descriptions, see:
 
-- [Usage Guide](docs/USAGE.md)
+- [Command-Line Usage](docs/CLI.md)
 
 ---
 
-## Pipeline Selection
+## Choosing a Workflow
+
+Most users should start by selecting a reconstruction workflow.
 
 | Capture Source | Depth Source | Recommendation |
 | --- | --- | --- |
@@ -68,41 +71,61 @@ For complete CLI and API examples, see:
 | MRUK | Quest Native Depth | Supported |
 | Legacy | Any Depth Source | Compatibility Workflow |
 
-For pipeline architecture and workflow details, see:
+For workflow recommendations, architecture details, and capture compatibility:
 
 - [Pipeline Guide](docs/PIPELINES.md)
 
 ---
 
-## Stereo Models
+## Choosing a Stereo Model
 
 Supported stereo models:
 
 - FoundationStereo
 - Fast-FoundationStereo
 
-For model setup and ONNX requirements, see:
+For model selection, ONNX conversion, and runtime requirements:
 
 - [Models Guide](docs/MODELS.md)
 
 ---
 
+## Public Python API
+
+The package can also be used directly from Python for custom processing workflows.
+
+For public imports, RGB/depth loading, camera trajectories, conversion helpers, and workflow APIs, see:
+
+- [Public Python API](docs/API.md)
+
+For timestamp conventions, coordinate systems, MRUK frame formats, dataset cache schemas, depth formats, and generated artifact layouts, see:
+
+- [Data Format Reference](docs/DATA_FORMAT.md)
+
+---
+
 ## Documentation
 
-- [Installation](docs/INSTALLATION.md)
-- [Usage](docs/USAGE.md)
-- [Pipelines](docs/PIPELINES.md)
-- [Models](docs/MODELS.md)
+- [Installation Guide](docs/INSTALLATION.md)
+- [Command-Line Usage](docs/CLI.md)
+- [Public Python API](docs/API.md)
+- [Data Format Reference](docs/DATA_FORMAT.md)
+- [Pipeline Guide](docs/PIPELINES.md)
+- [Models Guide](docs/MODELS.md)
+- [Legacy Usage Index](docs/USAGE.md)
 
---
+---
 
 ## 🧩 Third-Party Code
 
-This project includes components from [COLMAP](https://github.com/colmap/colmap), licensed under the 3-clause BSD License. See [`scripts/third_party/colmap/COPYING.txt`](./scripts/third_party/colmap/COPYING.txt) for details.
+This project includes components from [COLMAP](https://github.com/colmap/colmap), licensed under the 3-clause BSD License.
+
+See [`scripts/third_party/colmap/COPYING.txt`](./scripts/third_party/colmap/COPYING.txt) for details.
 
 ---
 
 ## 📝 License
 
 This project is licensed under the MIT License.
+
 See the [LICENSE](LICENSE) file for full text.
